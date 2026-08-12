@@ -1,0 +1,33 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
+    "types": ["node"],
+    // dep: build tsc -p resolve deps workspace pelas declaracoes de dist (ordem topologica pnpm -r);
+    // em dev/test (tsx/vitest) a resolucao usa exports -> src sem build.
+    "paths": {
+      "@nexo/shared": ["../../packages/shared/dist/index.d.ts"],
+      "@nexo/core": ["../../packages/core/dist/index.d.ts"],
+      "@nexo/security": ["../../packages/security/dist/index.d.ts"],
+      "@nexo/runtime": ["../../packages/runtime/dist/index.d.ts"],
+      "@nexo/storage": ["../../packages/storage/dist/index.d.ts"],
+      "@nexo/adapters": ["../../packages/adapters/dist/index.d.ts"],
+      "@nexo/intelligence": ["../../packages/intelligence/dist/index.d.ts"],
+      "@nexo/control-plane": ["../../packages/control-plane/dist/index.d.ts"]
+    }
+  },
+  "include": ["src"],
+  "references": [
+    { "path": "../../packages/shared" },
+    { "path": "../../packages/core" },
+    { "path": "../../packages/security" },
+    { "path": "../../packages/runtime" },
+    { "path": "../../packages/storage" },
+    { "path": "../../packages/adapters" },
+    { "path": "../../packages/intelligence" },
+    { "path": "../../packages/control-plane" }
+  ]
+}

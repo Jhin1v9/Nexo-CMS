@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"],
+    "paths": {
+      "@nexo/shared": ["../shared/src/index.ts"],
+      "@nexo/core": ["../core/src/index.ts"],
+      "@nexo/security": ["../security/src/index.ts"],
+      "@nexo/storage": ["../storage/src/index.ts"]
+    }
+  },
+  "include": ["src", "test"]
+}

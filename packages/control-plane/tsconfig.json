@@ -1,0 +1,25 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
+    "types": ["node"],
+    // dep: build tsc -p resolve deps workspace pelas declaracoes de dist (ordem topologica pnpm -r);
+    // em dev/test (tsx/vitest) a resolucao usa exports -> src sem build.
+    "paths": {
+      "@nexo/shared": ["../shared/dist/index.d.ts"],
+      "@nexo/core": ["../core/dist/index.d.ts"],
+      "@nexo/security": ["../security/dist/index.d.ts"],
+      "@nexo/storage": ["../storage/dist/index.d.ts"]
+    }
+  },
+  "include": ["src"],
+  "references": [
+    { "path": "../shared" },
+    { "path": "../core" },
+    { "path": "../security" },
+    { "path": "../storage" }
+  ]
+}

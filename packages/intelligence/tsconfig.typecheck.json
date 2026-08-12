@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"],
+    "paths": {
+      "@nexo/shared": ["../shared/src/index.ts"],
+      "@nexo/adapters": ["../adapters/src/index.ts"]
+    }
+  },
+  "include": ["src", "test"],
+  // fixtures são projetos de dados para os testes (não código deste package):
+  // não têm node_modules nem tsconfig próprio — excluídos do typecheck.
+  "exclude": ["test/fixtures"]
+}

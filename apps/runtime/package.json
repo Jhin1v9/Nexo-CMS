@@ -1,0 +1,43 @@
+{
+  "name": "@nexo/runtime-app",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "NEXO Agent API: Hono HTTP server expondo o Control Plane em 127.0.0.1 (SPEC.md §9)",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "development": "./src/index.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "types": "./src/index.ts",
+  "bin": {
+    "nexo-runtime": "./dist/main.js"
+  },
+  "files": [
+    "src",
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "tsx --conditions=development src/main.ts",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.typecheck.json",
+    "start:dist": "node dist/main.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.0",
+    "@nexo/adapters": "workspace:*",
+    "@nexo/control-plane": "workspace:*",
+    "@nexo/core": "workspace:*",
+    "@nexo/intelligence": "workspace:*",
+    "@nexo/runtime": "workspace:*",
+    "@nexo/security": "workspace:*",
+    "@nexo/shared": "workspace:*",
+    "@nexo/storage": "workspace:*",
+    "hono": "^4.13.0",
+    "zod": "^4.4.3"
+  }
+}
