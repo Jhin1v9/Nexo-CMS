@@ -173,6 +173,34 @@ export const MIGRATIONS: readonly Migration[] = [
       CREATE INDEX idx_component_versions_component ON component_versions(component_id, published_at);
     `,
   },
+  {
+    // M4 — version 7 RESERVADA para @nexo/secrets (M4-CONTRACTS §4: v7=secrets,
+    // v8=ai_providers/ai_tasks/ai_task_events). Nunca reutilizar.
+    // D25 (RT&SEC §69-70): secret store local — NUNCA plaintext aqui; apenas
+    // ciphertext AES-256-GCM + iv + auth_tag (chave mestra fora do DB, em
+    // NEXO_HOME/keys modo 0600). scope CHECK conforme M4-CONTRACTS §2.1.
+    // metadata_json NUNCA contém secret material (WM §24).
+    version: 7,
+    name: 'm4-secrets',
+    sql: `
+      CREATE TABLE secrets (
+        id            TEXT PRIMARY KEY,
+        name          TEXT NOT NULL,
+        scope         TEXT NOT NULL CHECK (scope IN ('WORKSPACE','PROJECT')),
+        project_id    TEXT,
+        provider_id   TEXT,
+        ciphertext    TEXT NOT NULL,
+        iv            TEXT NOT NULL,
+        auth_tag      TEXT NOT NULL,
+        metadata_json TEXT NOT NULL,
+        created_at    TEXT NOT NULL,
+        updated_at    TEXT NOT NULL,
+        revoked_at    TEXT
+      );
+      CREATE INDEX idx_secrets_scope ON secrets(scope);
+      CREATE INDEX idx_secrets_project ON secrets(project_id);
+    `,
+  },
 ];
 
 /**

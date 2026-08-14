@@ -11,6 +11,7 @@ export type {
   ProjectModelSnapshot,
   ProjectRegistration,
   ProjectStatus,
+  SecretRecord,
   Workspace,
   WorkspaceStatus,
 } from './types.js';
@@ -53,6 +54,11 @@ export {
   createResponsiveSnapshotRepository,
   type ResponsiveSnapshotRepository,
 } from './repos/responsive-snapshot-repository.js';
+export {
+  createSecretRepository,
+  type SecretMaterialUpdate,
+  type SecretRepository,
+} from './repos/secret-repository.js';
 export {
   createStorage,
   defaultDataDir,

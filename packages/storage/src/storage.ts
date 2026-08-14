@@ -46,6 +46,10 @@ import {
   type ResponsiveViewportRepository,
 } from './repos/responsive-viewport-repository.js';
 import {
+  createSecretRepository,
+  type SecretRepository,
+} from './repos/secret-repository.js';
+import {
   createWorkspaceRepository,
   type WorkspaceRepository,
 } from './repos/workspace-repository.js';
@@ -67,6 +71,7 @@ export interface StorageRepos {
   responsiveViewports: ResponsiveViewportRepository;
   responsiveSnapshots: ResponsiveSnapshotRepository;
   components: ComponentRepository;
+  secrets: SecretRepository;
 }
 
 export interface Storage {
@@ -94,6 +99,7 @@ export function createStorage(dataDir: string): Result<Storage> {
         responsiveViewports: createResponsiveViewportRepository(db),
         responsiveSnapshots: createResponsiveSnapshotRepository(db),
         components: createComponentRepository(db),
+        secrets: createSecretRepository(db),
       },
       close() {
         db.close();

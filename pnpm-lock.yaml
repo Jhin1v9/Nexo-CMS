@@ -159,6 +159,34 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
 
+  packages/ai:
+    dependencies:
+      '@nexo/core':
+        specifier: workspace:*
+        version: link:../core
+      '@nexo/intelligence':
+        specifier: workspace:*
+        version: link:../intelligence
+      '@nexo/runtime':
+        specifier: workspace:*
+        version: link:../runtime
+      '@nexo/secrets':
+        specifier: workspace:*
+        version: link:../secrets
+      '@nexo/security':
+        specifier: workspace:*
+        version: link:../security
+      '@nexo/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@nexo/storage':
+        specifier: workspace:*
+        version: link:../storage
+    devDependencies:
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+
   packages/components:
     dependencies:
       '@nexo/adapters':
@@ -348,6 +376,15 @@ importers:
       '@nexo/shared':
         specifier: workspace:*
         version: link:../shared
+
+  packages/secrets:
+    dependencies:
+      '@nexo/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@nexo/storage':
+        specifier: workspace:*
+        version: link:../storage
 
   packages/security:
     dependencies:

@@ -172,3 +172,27 @@ export interface ComponentVersionRow {
   record: Record<string, unknown>; // ComponentVersionRecord serializado (08§26)
   publishedAt: string; // ISO 8601
 }
+
+/**
+ * SecretRecord (M4 — M4-CONTRACTS §2.1/§9, D25): registro do secret store
+ * local. O VALOR vive SOMENTE cifrado (AES-256-GCM por @nexo/secrets):
+ * ciphertext/iv/authTag em base64. Nenhum campo deste record contém
+ * plaintext — metadata é JSON estrutural (Record) e NUNCA secret material
+ * (WM §24). projectId é NULL para scope WORKSPACE; providerId é a referência
+ * lógica do provider de IA dono da credencial (quando houver).
+ * revokedAt != null => usos futuros falham FORBIDDEN (M4-CONTRACTS §2.1).
+ */
+export interface SecretRecord {
+  id: string; // uuid estável gerado por @nexo/secrets
+  name: string;
+  scope: 'WORKSPACE' | 'PROJECT';
+  projectId: string | null;
+  providerId: string | null;
+  ciphertext: string; // base64 — NUNCA plaintext
+  iv: string; // base64, 12 bytes (GCM)
+  authTag: string; // base64, 16 bytes (GCM)
+  metadata: Record<string, unknown>; // JSON estrutural, sem secret material
+  createdAt: string; // ISO 8601
+  updatedAt: string; // ISO 8601
+  revokedAt: string | null; // ISO 8601
+}

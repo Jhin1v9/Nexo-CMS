@@ -18,6 +18,7 @@ import type {
   Job,
   MediaAssetRecord,
   ProjectRegistration,
+  SecretRecord,
   Storage,
   Workspace,
 } from '../src/index.js';
@@ -310,5 +311,89 @@ describe('MediaAssetRepository (M3 — doc 08§42, D10)', () => {
     expect(storage.repos.mediaAssets.remove(asset.id)).toBe(true);
     expect(storage.repos.mediaAssets.remove(asset.id)).toBe(false);
     expect(storage.repos.mediaAssets.getById(asset.id)).toBeNull();
+  });
+});
+
+describe('SecretRepository (M4 — M4-CONTRACTS §2.1, D25; migration v7)', () => {
+  function makeSecret(overrides: Partial<SecretRecord> = {}): SecretRecord {
+    return {
+      id: crypto.randomUUID(),
+      name: 'openai-prod',
+      scope: 'PROJECT',
+      projectId: 'p-1',
+      providerId: 'prov-openai',
+      // material ja cifrado por @nexo/secrets — o repo nunca ve plaintext
+      ciphertext: 'Y2lwaGVy',
+      iv: 'aXYtMTItYnl0ZXM=',
+      authTag: 'dGFnLTE2LWJ5dGVz',
+      metadata: { note: 'rotacionar em 90d' },
+      createdAt: iso(),
+      updatedAt: iso(),
+      revokedAt: null,
+      ...overrides,
+    };
+  }
+
+  it('migration v7 cria a tabela secrets com CHECK de scope', () => {
+    const applied = storage.db
+      .prepare('SELECT version FROM schema_migrations WHERE version = 7')
+      .get() as { version: number } | undefined;
+    expect(applied?.version).toBe(7);
+    expect(() =>
+      storage.db
+        .prepare(
+          `INSERT INTO secrets (id, name, scope, ciphertext, iv, auth_tag, metadata_json, created_at, updated_at)
+           VALUES ('x', 'n', 'GLOBAL', 'c', 'i', 't', '{}', 'now', 'now')`,
+        )
+        .run(),
+    ).toThrow();
+  });
+
+  it('insert + getById roundtrip (metadata_json <-> Record)', () => {
+    const secret = makeSecret();
+    storage.repos.secrets.insert(secret);
+    expect(storage.repos.secrets.getById(secret.id)).toEqual(secret);
+    expect(storage.repos.secrets.getById('ghost')).toBeNull();
+  });
+
+  it('list sem filtro retorna todos; com projectId inclui o projeto + WORKSPACE', () => {
+    storage.repos.secrets.insert(makeSecret({ projectId: 'p-1' }));
+    storage.repos.secrets.insert(makeSecret({ projectId: 'p-2' }));
+    storage.repos.secrets.insert(makeSecret({ scope: 'WORKSPACE', projectId: null }));
+    expect(storage.repos.secrets.list()).toHaveLength(3);
+    expect(storage.repos.secrets.list('p-1')).toHaveLength(2);
+    expect(storage.repos.secrets.list('p-2')).toHaveLength(2);
+    expect(storage.repos.secrets.list('ghost')).toHaveLength(1);
+  });
+
+  it('updateMaterial (rotate) substitui ciphertext/iv/authTag e updatedAt', () => {
+    const secret = makeSecret();
+    storage.repos.secrets.insert(secret);
+    const rotated = {
+      ciphertext: 'bm92bw==',
+      iv: 'bm92by1pdi0xMg==',
+      authTag: 'bm92by10YWctMTY=',
+      updatedAt: iso(),
+    };
+    expect(storage.repos.secrets.updateMaterial(secret.id, rotated)).toBe(true);
+    expect(storage.repos.secrets.updateMaterial('ghost', rotated)).toBe(false);
+    const got = storage.repos.secrets.getById(secret.id);
+    expect(got?.ciphertext).toBe(rotated.ciphertext);
+    expect(got?.iv).toBe(rotated.iv);
+    expect(got?.authTag).toBe(rotated.authTag);
+    expect(got?.updatedAt).toBe(rotated.updatedAt);
+    expect(got?.revokedAt).toBeNull();
+  });
+
+  it('setRevoked grava revoked_at; remove so remove de verdade', () => {
+    const secret = makeSecret();
+    storage.repos.secrets.insert(secret);
+    const at = iso();
+    expect(storage.repos.secrets.setRevoked(secret.id, at)).toBe(true);
+    expect(storage.repos.secrets.setRevoked('ghost', at)).toBe(false);
+    expect(storage.repos.secrets.getById(secret.id)?.revokedAt).toBe(at);
+    expect(storage.repos.secrets.remove(secret.id)).toBe(true);
+    expect(storage.repos.secrets.remove(secret.id)).toBe(false);
+    expect(storage.repos.secrets.getById(secret.id)).toBeNull();
   });
 });
