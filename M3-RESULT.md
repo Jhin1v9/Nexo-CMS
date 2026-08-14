@@ -18,7 +18,7 @@ Editor core + Components/Media Engine + Design/Theme + Responsive Lab + UI `apps
 
 ## 4. Novas capabilities
 
-37: `editor.*` (10: source.open/save/close, change.apply/undo/redo/list, draft.create/discard, diagnostics, preview.refresh), `component.*` (6: list/inspect/create/update/delete/publish), `media.*` (7: upload/list/inspect/update/replace/delete/usage), `design.*` (4: get/update/token.list/token.update), `theme.*` (2: list/apply), `responsive.*` (8: viewport.create/list/delete, preview, diagnose, stressTest, compare, snapshot). Total descobrível: **56**.
+37: `editor.*` (10: source.open/save, selection.read, change.create/preview/apply/reject/list/undo/redo), `component.*` (6: list/read/create/update/delete/publish), `media.*` (7: list/read/search/upload/update/replace/delete), `design.*` (4: read/update/token.read/token.update), `theme.*` (2: read/update), `responsive.*` (8: viewport.create/list/delete, preview, diagnose, stressTest, compare, snapshot). Total descobrível: **56**.
 
 ## 5. Novas APIs
 

@@ -38,3 +38,27 @@
   (c) `runtime.command.execute` (RESTRICTED) NÃO recebeu canal de aprovação (gate interno '*.execute_sensitive' sem acesso a approval via ExecutionContext — exigiria mudança em packages/core). Limitação registrada: builds/tests/preview via command.execute seguem bloqueados por policy; preview do M3 usa a camada própria do responsive (spawn disciplinado + ProcessRegistry). Wire de approval em ExecutionContext fica para M4.
   (d) `pnpm-lock.yaml` formalizado na integração (coders não rodam install).
 - D19 (2026-08-14, M3 — emenda de contrato): `responsive.viewport.list` e `responsive.viewport.delete` adicionadas ao Control Plane (37 capabilities M3). O registry de viewports (09§24-25) já existia no service; sem list/delete a UI não podia gerenciar viewports sem inventar dados. Ambas SAFE: registry Nexo-owned, reversível, nunca toca Source Project (precedente: viewport.create já era SAFE com escrita no registry). M3-CONTRACTS §3.5 emendado.
+
+## D20 — Providers do 1º release (MASTER §4, doc 11 §5)
+OpenAI, Anthropic, Gemini, Kimi, OpenAI-compatible/local. Cada um com adapter próprio atrás de AIProviderAdapter comum (M4-CONTRACTS §3). Nenhum provider fictício. Luna provider: LUNA-DEFERRED.
+
+## D21 — Assinaturas do Provider Contract
+identify/getModels/generate/stream?/cancel-via-AbortSignal (doc 11 §6 delega à implementação). Cancelamento = AbortSignal client-side (único mecanismo comum confirmado; server-side cancel não é documentado pelos providers).
+
+## D22 — AI Task schema/storage (GROUP-F [NÃO ESPECIFICADO])
+ai_tasks + ai_task_events (SQLite v8); 9 estados doc 11 §45; boot recovery: não-terminais → FAILED RUNTIME_RESTART (§34: interrompido ≠ concluído).
+
+## D23 — Context budget defaults (doc 11 §25, §69 "may")
+20 arquivos / 64KB por arquivo / 512KB total. Bounded output (master §33).
+
+## D24 — Retry/timeout provider-level (doc 11 omite; master §33 sem retry infinito)
+Timeout 120s default (máx 600s). Retry: máx 2, backoff exponencial, só RATE_LIMITED/TIMEOUT/5xx; chamada generate não tem efeito de projeto → retry seguro; destrutivas NUNCA repetidas (§40).
+
+## D25 — Secret store local (RT&SEC §69-70 "não plaintext"; sem KMS documentado)
+AES-256-GCM, chave em NEXO_HOME/keys modo 0600. KMS/HSM = COMMERCIAL-FUTURE. Separação config/secret material obrigatória (WM §24).
+
+## D26 — ai.task.create é SAFE
+Criação de task não muta projeto (mutações passam por WAITING_APPROVAL/policy); audit registra creator. Mutações internas do task seguem REQUIRE_APPROVAL normalmente.
+
+## D27 — Auth formal permanece OPEN (OQ#2)
+Docs proíbem inventar mecanismo (PM §1, UR §58, CP §21). Mantido: ator local fail-closed + bind 127.0.0.1 + DEFAULT DENY. AI executa como agent:ai-engine com initiatedBy humano real (FP §20).
