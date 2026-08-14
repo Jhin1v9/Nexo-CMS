@@ -46,6 +46,9 @@ importers:
       '@nexo/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@nexo/git':
+        specifier: workspace:*
+        version: link:../../packages/git
       '@nexo/intelligence':
         specifier: workspace:*
         version: link:../../packages/intelligence
@@ -100,6 +103,21 @@ importers:
       zod:
         specifier: ^4.4.3
         version: 4.4.3
+
+  packages/git:
+    dependencies:
+      '@nexo/core':
+        specifier: workspace:*
+        version: link:../core
+      '@nexo/runtime':
+        specifier: workspace:*
+        version: link:../runtime
+      '@nexo/security':
+        specifier: workspace:*
+        version: link:../security
+      '@nexo/shared':
+        specifier: workspace:*
+        version: link:../shared
 
   packages/intelligence:
     dependencies:

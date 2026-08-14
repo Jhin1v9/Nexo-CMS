@@ -153,7 +153,7 @@ describe('agent flow M1 (a-n) — servidor real + fetch puro', () => {
   });
 
   // ---- (b) capabilities ----------------------------------------------------
-  it('b. GET /v1/capabilities -> 8 capabilities com decisão allowed', async () => {
+  it('b. GET /v1/capabilities -> 19 capabilities (M1+M2 git) com decisão allowed', async () => {
     const { status, body } = await api<{ capabilities: { id: string; allowed: string; risk: string }[] }>(
       'GET',
       '/v1/capabilities',
@@ -161,6 +161,17 @@ describe('agent flow M1 (a-n) — servidor real + fetch puro', () => {
     expect(status).toBe(200);
     const caps = body.value!.capabilities;
     expect(caps.map((c) => c.id).sort()).toEqual([
+      'git.branch.create',
+      'git.branch.delete',
+      'git.branch.list',
+      'git.branch.switch',
+      'git.commit',
+      'git.diff',
+      'git.fetch',
+      'git.history',
+      'git.pull',
+      'git.push',
+      'git.status',
       'project.import',
       'project.list',
       'project.open',
@@ -170,7 +181,13 @@ describe('agent flow M1 (a-n) — servidor real + fetch puro', () => {
       'runtime.filesystem.list',
       'runtime.filesystem.read',
     ]);
-    for (const c of caps) expect(c.allowed).toBe('ALLOW'); // ator local default
+    // ator local: ALLOW em M1 + leituras git; REQUIRE_APPROVAL nas 7 mutações
+    // git (risk DESTRUCTIVE no PolicyEngine — handoff M2/doc 10 §16/§47).
+    const GIT_READS = ['git.status', 'git.diff', 'git.history', 'git.branch.list'];
+    for (const c of caps) {
+      const gitMutation = c.id.startsWith('git.') && !GIT_READS.includes(c.id);
+      expect(c.allowed).toBe(gitMutation ? 'REQUIRE_APPROVAL' : 'ALLOW');
+    }
     // ator desconhecido: mesma listagem, decisão DENY (discovery filtrado por authorize)
     const denied = await api<{ capabilities: { allowed: string }[] }>(
       'GET',

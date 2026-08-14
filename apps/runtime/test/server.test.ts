@@ -84,12 +84,23 @@ describe('agent api M1 (servidor real + fetch)', () => {
     expect(await res.json()).toMatchObject({ status: 'ok' });
   });
 
-  it('GET /v1/capabilities -> 8 capabilities M1, ALLOW para o ator local default', async () => {
+  it('GET /v1/capabilities -> 19 capabilities (M1+M2 git), ALLOW/REQUIRE_APPROVAL para o ator local default', async () => {
     const { status, body } = api ? await api<{ capabilities: { id: string; allowed: string }[] }>('GET', '/v1/capabilities') : null!;
     expect(status).toBe(200);
     const caps = body.value!.capabilities;
     const ids = caps.map((c) => c.id).sort();
     expect(ids).toEqual([
+      'git.branch.create',
+      'git.branch.delete',
+      'git.branch.list',
+      'git.branch.switch',
+      'git.commit',
+      'git.diff',
+      'git.fetch',
+      'git.history',
+      'git.pull',
+      'git.push',
+      'git.status',
       'project.import',
       'project.list',
       'project.open',
@@ -99,7 +110,14 @@ describe('agent api M1 (servidor real + fetch)', () => {
       'runtime.filesystem.list',
       'runtime.filesystem.read',
     ]);
-    for (const c of caps) expect(c.allowed).toBe('ALLOW');
+    // M2: leituras git ALLOW; as 7 mutações git REQUIRE_APPROVAL (DESTRUCTIVE).
+    const byId = new Map(caps.map((c) => [c.id, c.allowed]));
+    for (const c of caps) {
+      const mutacaoGit = c.id.startsWith('git.') && !['git.status', 'git.diff', 'git.history', 'git.branch.list'].includes(c.id);
+      expect(c.allowed).toBe(mutacaoGit ? 'REQUIRE_APPROVAL' : 'ALLOW');
+    }
+    expect(byId.get('git.commit')).toBe('REQUIRE_APPROVAL');
+    expect(byId.get('git.status')).toBe('ALLOW');
   });
 
   it('GET /v1/capabilities com ator desconhecido -> DEFAULT DENY', async () => {

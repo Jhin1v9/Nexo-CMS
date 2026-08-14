@@ -16,7 +16,8 @@
       "@nexo/storage": ["../../packages/storage/dist/index.d.ts"],
       "@nexo/adapters": ["../../packages/adapters/dist/index.d.ts"],
       "@nexo/intelligence": ["../../packages/intelligence/dist/index.d.ts"],
-      "@nexo/control-plane": ["../../packages/control-plane/dist/index.d.ts"]
+      "@nexo/control-plane": ["../../packages/control-plane/dist/index.d.ts"],
+      "@nexo/git": ["../../packages/git/dist/index.d.ts"]
     }
   },
   "include": ["src"],
@@ -28,6 +29,7 @@
     { "path": "../../packages/storage" },
     { "path": "../../packages/adapters" },
     { "path": "../../packages/intelligence" },
-    { "path": "../../packages/control-plane" }
+    { "path": "../../packages/control-plane" },
+    { "path": "../../packages/git" }
   ]
 }

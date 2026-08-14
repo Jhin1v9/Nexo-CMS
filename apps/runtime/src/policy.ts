@@ -18,9 +18,22 @@
  *    a capability reclassifica o comando no handler — RESTRICTED/UNKNOWN ->
  *    REQUIRE_APPROVAL via política estática `*.execute_sensitive` do
  *    PolicyEngine; BLOCKED/DANGEROUS -> COMMAND_BLOCKED pelo executor (SPEC §4).
+ *  - M2 (Git, doc 10 + decisão D3): leituras `git.status`, `git.diff`,
+ *    `git.history`, `git.branch.list` -> ALLOW (risk SAFE). As 7 mutações
+ *    (`git.branch.create`, `git.branch.switch`, `git.branch.delete`,
+ *    `git.commit`, `git.push`, `git.pull`, `git.fetch`) têm grant MAS risk
+ *    DESTRUCTIVE no PolicyEngine -> REQUIRE_APPROVAL mesmo com grant
+ *    (handoff M2 + doc 10 §16/§47: branch.switch incluído por risco de perda
+ *    de dados). O gate é do Control Plane: REQUIRE_APPROVAL short-circuita
+ *    ANTES de qualquer execução git (SPEC §8 short-circuit).
+ *  - Permissões git RESERVADAS (decisão D3, doc 10 §70/§80) — SEM grant e SEM
+ *    capability em M2, DEFAULT DENY permanente: `git.forcePush`,
+ *    `git.resetHard`, `git.branch.deleteForce`. Force em push/delete retorna
+ *    UNSUPPORTED apontando a capability reservada (regra no @nexo/git).
  *  - Qualquer outra permissão -> DEFAULT DENY (sem grant).
  */
 
+import type { RiskLevel } from '@nexo/core';
 import type { AuditSink } from '@nexo/security';
 import { createPolicyEngine, type PolicyEngine } from '@nexo/security';
 
@@ -54,11 +67,54 @@ export const M1_LOCAL_GRANTS: readonly string[] = [
   SENSITIVE_COMMAND_PERMISSION,
 ];
 
+/** Leituras git M2 (doc 10): ALLOW com grant (risk SAFE). */
+export const GIT_READ_PERMISSIONS: readonly string[] = [
+  'git.status',
+  'git.diff',
+  'git.history',
+  'git.branch.list',
+];
+
+/**
+ * Mutações git M2 (doc 10 + handoff M2): grant existe, mas o risk DESTRUCTIVE
+ * no PolicyEngine força REQUIRE_APPROVAL mesmo com grant — o Control Plane
+ * short-circuita ANTES de qualquer execução git (SPEC §8). branch.switch está
+ * incluído (doc 10 §16/§47: risco de perda de dados).
+ */
+export const GIT_MUTATION_PERMISSIONS: readonly string[] = [
+  'git.branch.create',
+  'git.branch.switch',
+  'git.branch.delete',
+  'git.commit',
+  'git.push',
+  'git.pull',
+  'git.fetch',
+];
+
+/**
+ * Permissões git RESERVADAS (decisão D3, doc 10 §70/§80): SEM grant e SEM
+ * capability em M2 -> DEFAULT DENY permanente. Documentadas aqui para que
+ * ninguém "invente" grant silenciosamente (regra das OPEN QUESTIONS).
+ */
+export const GIT_RESERVED_PERMISSIONS: readonly string[] = [
+  'git.forcePush',
+  'git.resetHard',
+  'git.branch.deleteForce',
+];
+
+/** Riscos estáticos git M2 para o PolicyEngine (leitura SAFE, mutação DESTRUCTIVE). */
+export const GIT_PERMISSION_RISKS: Record<string, RiskLevel> = {
+  ...Object.fromEntries(GIT_READ_PERMISSIONS.map((p) => [p, 'SAFE' as const])),
+  ...Object.fromEntries(GIT_MUTATION_PERMISSIONS.map((p) => [p, 'DESTRUCTIVE' as const])),
+};
+
 export function createM1PolicyEngine(audit: AuditSink): PolicyEngine {
   return createPolicyEngine({
-    grants: { [LOCAL_ACTOR_ID]: M1_LOCAL_GRANTS },
-    // Sem riscos DESTRUCTIVE/CRITICAL mapeados no M1: a aprovação de comandos
-    // não-SAFE é forçada pela regra estática '*.execute_sensitive' do PolicyEngine.
+    grants: { [LOCAL_ACTOR_ID]: [...M1_LOCAL_GRANTS, ...GIT_READ_PERMISSIONS, ...GIT_MUTATION_PERMISSIONS] },
+    // M2: risks populados — mutações git DESTRUCTIVE -> REQUIRE_APPROVAL mesmo
+    // com grant (mecanismo do PolicyEngine). A aprovação de comandos não-SAFE
+    // segue forçada pela regra estática '*.execute_sensitive'.
+    risks: GIT_PERMISSION_RISKS,
     audit,
   });
 }

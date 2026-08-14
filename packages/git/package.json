@@ -1,0 +1,31 @@
+{
+  "name": "@nexo/git",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "NEXO Git: GitClient/GitService sobre git CLI real via @nexo/runtime CommandExecutor (doc 10, D2)",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "development": "./src/index.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "types": "./src/index.ts",
+  "files": [
+    "src",
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.typecheck.json"
+  },
+  "dependencies": {
+    "@nexo/shared": "workspace:*",
+    "@nexo/core": "workspace:*",
+    "@nexo/security": "workspace:*",
+    "@nexo/runtime": "workspace:*"
+  }
+}

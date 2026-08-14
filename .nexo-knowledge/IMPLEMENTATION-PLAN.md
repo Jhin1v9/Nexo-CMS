@@ -18,8 +18,18 @@ Prova: Select Folder → Runtime Access → Scan → Stack Detection → Project
 
 **M1 — FOUNDATION: VALIDADO (2026-08-12).** Próximo: M2 Git Foundation.
 
-### M2 — Git Foundation (NOT STARTED)
-git.status/diff/history/branch.*/commit/push/pull/fetch via Runtime; alto risco com REQUIRE_APPROVAL. Lib/CLI git: decisão com pesquisa oficial (Open Question #4). Docs: 10-GIT, 04, 05, 06, 13.
+### M2 — Git Foundation (VALIDADO — 2026-08-14)
+git.status/diff/history/branch.*/commit/push/pull/fetch via Runtime; alto risco com REQUIRE_APPROVAL. Lib git: DECIDIDA (D2 — git CLI real via @nexo/runtime CommandExecutor, ver STACK-DECISION.md). Nomenclatura: D3 (camelCase doc 10). Docs: 10-GIT, 04, 05, 06, 13.
+
+| Wave | Escopo | Status | Evidência |
+|---|---|---|---|
+| 0 | Decisão lib git (Q4) + contratos congelados (capabilities/permissões/schemas) | IMPLEMENTED | STACK-DECISION D2, OPEN-QUESTIONS D3/D4/D5 |
+| 1 | packages/git (GitService, parsers, errors, redaction) + unit tests repos reais | IMPLEMENTED | 88 testes verdes, repos git reais em tmpdir, bare remotes |
+| 2 | apps/runtime capabilities git (11) + policy (read ALLOW / mutação REQUIRE_APPROVAL) + apps/cli comandos git:* | IMPLEMENTED | 19 testes app + 8 testes CLI verdes |
+| 3 | e2e git flow (15) + security probes (injeção path/flag/shell, fail-closed) | IMPLEMENTED | 51/51 e2e verdes |
+| 4 | Gate final + verificação independente | IMPLEMENTED | build 11/11, typecheck 11/11, lint 0/0, 313 unit + 51 e2e, smoke dist real: health/capabilities/import/status/diff/history/branch.list 200, 7 mutações 422, sem header 403, inexistente 404, repo intacto pós-probes |
+
+**M2 — GIT FOUNDATION: VALIDADO (2026-08-14).** Leituras git operam contra o repo real via HTTP/CLI; mutações ficam atrás de REQUIRE_APPROVAL estruturado (fluxo de aprovação humana = milestone futuro, Open Question #2); permissões de força reservadas sem grant (git.forcePush/resetHard/branch.deleteForce → DEFAULT DENY; uso de force retorna UNSUPPORTED apontando a capability reservada). Próximo: M3 Editor core + Components/Media + Design/Responsive.
 
 ### M3 — Editor core + Components/Media + Design/Responsive (NOT STARTED) — P1
 Docs: 07, 08, 09 + 01–06. Save pipeline real, source mapping, component schema, tokens, viewports. UI (apps/cms React+Vite) entra aqui.

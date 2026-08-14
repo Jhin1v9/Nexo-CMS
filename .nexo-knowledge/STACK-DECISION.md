@@ -29,6 +29,23 @@ node >=20 · pnpm 10 · typescript ^6.0 · hono ^4.13 · @hono/node-server ^1 ·
 - nodejs.org/en/about/previous-releases + endoflife.date/nodejs (24 LTS ativo, EOL 2028-04-30; env instalado = v20.20.2)
 - npmjs.com/package/hono (4.13.1), npmjs.com/package/better-sqlite3 (13.0.3, "requires currently supported Node.js"), npmjs.com/package/vitest (4.1.10), devblogs.microsoft.com/typescript (6.0 bridge / 7.0 native)
 
+## D2 — Lib Git concreta (2026-08-14, Open Question #4)
+> Exigência dos docs: Git REAL (doc 10 §1/§83: "must never replace Git's actual repository state"; Inv. 14; doc 10 §82 passos 5-6: inspecionar versão do git do ambiente + docs oficiais).
+
+### Opções avaliadas (pesquisa oficial 2026-08-14)
+| Opção | Veredito | Motivo |
+|---|---|---|
+| **git CLI real via @nexo/runtime CommandExecutor** | **ESCOLHIDA** | É o Git canônico (binário `git` 2.39.5 verificado no ambiente). A cadeia arquitetural do doc 10 §3/§51 é Consumer → Git API → GitService → Authorization → **Runtime** → Real Git: o executor do M1 já provê spawn sem shell, scope guard (cwd dentro do Project Root), classificação, timeout real, audit allow+deny e process registry — exatamente a fronteira de segurança exigida. Hooks Git executam de verdade e são contabilizados (doc 10 §54/§55). Zero dependência nova (SPEC §0 / Inv. 41). Saída estruturada via formatos machine-readable oficiais (`--porcelain=v2 --branch`, `--format` com separadores, `--numstat`). |
+| simple-git 3.36.0 | Rejeitada | Wrapper popular e mantido (npm, verificado 2026-08), mas executa git FORA da fronteira @nexo/runtime (spawn próprio: perde scope guard/classificação/audit da cadeia doc 10 §51) e adiciona dependência + superficie de CVE (CVE-2026-28292, crítico, corrigido em 3.32.3 — Snyk/GitHub Advisory, verificado). |
+| isomorphic-git | Rejeitada | Reimplementação JS pura do Git — risco direto à Inv. 14 ("Git não pode ser falsificado") e ao doc 10 §83 (nunca substituir estado/história/semântica reais); não executa hooks do projeto (doc 10 §54); manutenção comunitária reduzida (README oficial). |
+| nodegit (libgit2) | Rejeitada | Binding nativo frágil (build por plataforma; histórico de segfaults), não é o git CLI canônico. |
+
+### Consequências
+- `@nexo/git` (M2) implementa GitClient/GitService sobre `CommandExecutor` injetado: semântica de comando, interpretação de estado, autorização e resultado estruturado ficam no GitService; execução de processo fica no Runtime (doc 10 §51).
+- Erros classificados em códigos de máquina (doc 10 §62/§63); verificação pós-operação obrigatória (§58/§59/§60); URLs remotas com credenciais redigidas (§61); force ops são permissões separadas (§25/§70).
+- Versão do git inspecionada em runtime (`git --version`); formatos usados existem desde git ≥ 2.11 (porcelain v2) — matriz declarada: git ≥ 2.20 recomendado, testado em 2.39.5 (Linux).
+- Fontes: npmjs.com/package/simple-git (3.36.0), GitHub Advisory GHSA-r275-fr43-pm7q / CVE-2026-28292, isomorphic-git.org README/FAQ, git-scm.com/docs (porcelain v2).
+
 ## Consequências
 - Core tecnologicamente neutro (Inv. 43): nenhuma lógica de framework-alvo no Core — vale para o stack do Nexo também (Hono/SQLite ficam em apps/runtime e packages/storage, nunca em packages/core).
 - Compatibilidade declarada (Inv. 38): suporte declarado = Node ≥ 20 testado em 20.20.2 (Linux); Windows/macOS = não testado nesta sessão (não declarar).

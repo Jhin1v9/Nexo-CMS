@@ -44,6 +44,7 @@ import {
   makeFsReadHandler,
   type RuntimeCapabilityDeps,
 } from './capabilities/runtime.js';
+import { gitCapabilityRegistrations, type GitCapabilityDeps } from './capabilities/git.js';
 import { createM1PolicyEngine } from './policy.js';
 
 export interface RuntimeInstance {
@@ -85,6 +86,13 @@ export function createRuntime(opts: RuntimeOptions = {}): Result<RuntimeInstance
   controlPlane.register({ contract: fsReadContract(), handler: makeFsReadHandler(runtimeDeps) });
   controlPlane.register({ contract: fsListContract(), handler: makeFsListHandler(runtimeDeps) });
   controlPlane.register({ contract: commandExecuteContract(), handler: makeCommandExecuteHandler(runtimeDeps) });
+
+  // capabilities M2 (git): 11 capabilities sobre @nexo/git, executor scoped
+  // por invoke (allowedRoot = rootPath registrado) — ver capabilities/git.ts.
+  const gitDeps: GitCapabilityDeps = { storage, security, audit };
+  for (const cap of gitCapabilityRegistrations(gitDeps)) {
+    controlPlane.register(cap);
+  }
 
   // 6. HTTP
   const app = createAgentApi({ controlPlane });

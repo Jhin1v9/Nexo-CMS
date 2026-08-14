@@ -111,7 +111,16 @@ describe('createStorage', () => {
     expect(r.error.details).toBeDefined();
   });
 
-  it('dataDir read-only (chmod) -> STORAGE_UNAVAILABLE ao abrir nexo.db', () => {
+  it('dataDir read-only (chmod) -> STORAGE_UNAVAILABLE ao abrir nexo.db', (ctx) => {
+    // Root (uid 0) ignora bits de permissao de diretorio (CAP_DAC_OVERRIDE):
+    // chmod 0555 nao impede escrita, logo a precondicao "read-only" e
+    // impossivel de criar neste ambiente. Skip explicito e documentado —
+    // nao e sucesso falso: o cenario ENOTDIR acima cobre o mesmo caminho de
+    // erro (STORAGE_UNAVAILABLE) de forma deterministica.
+    if (typeof process.getuid === 'function' && process.getuid() === 0) {
+      ctx.skip('chmod read-only nao se aplica a root (uid 0)');
+      return;
+    }
     chmodSync(dir, 0o555);
     try {
       const r = createStorage(dir);

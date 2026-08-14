@@ -3,97 +3,85 @@
 
 ---
 
-## Estado Atual (2026-08-12)
+## Estado Atual (2026-08-14)
 
-**Milestone:** M1 — FOUNDATION ✅ VALIDADO
-**Proximo:** M2 — Git Foundation (NOT STARTED)
+**Milestone:** M2 — GIT FOUNDATION VALIDADO
+**Proximo:** M3 — Editor core + Components/Media + Design/Responsive (NOT STARTED)
 
-### O que foi entregue em M1
+### O que foi entregue em M1 (2026-08-12)
 - Monorepo pnpm com 8 packages + 2 apps
 - @nexo/core, @nexo/shared, @nexo/security, @nexo/runtime
 - @nexo/storage (SQLite, 5 repos, migrations)
 - @nexo/adapters (15 detection adapters)
 - @nexo/intelligence (scanner, ProjectModel, fingerprint)
 - @nexo/control-plane + apps/runtime (Hono) + apps/cli
-- 204 unit tests + 36 e2e verdes
-- Build 10/10, typecheck 10/10, lint 0/0
+- 204 unit tests + 36 e2e verdes; build 10/10, typecheck 10/10, lint 0/0
+
+### O que foi entregue em M2 (2026-08-14)
+- **@nexo/git** (packages/git): GitClient + GitService sobre git CLI REAL via
+  @nexo/runtime CommandExecutor (decisao D2 — zero deps externas novas).
+  - status (porcelain v2, 12 estados de repo doc 10 s8, remoteState doc 10 s45)
+  - diff (5 modos doc 10 s11), history (parents/refs/limit), branch list
+  - branch create (check-ref-format real), switch (pre-check dirty: REQUIRES_COMMIT/BLOCKED, nunca descarta mudancas), delete (force -> UNSUPPORTED git.branch.deleteForce)
+  - commit (escopo: staged default / files[] explicito / all:true opt-in; expectedHead optimistic concurrency -> CONFLICT; verificacao pos-commit; hook failure -> HookFailed)
+  - push (JAMAIS force; NonFastForward -> CONFLICT; verificacao pos-push), pull (pre-check WorkingTreeDirty; conflito real -> CONFLICT + arquivos; piRefreshRecommended), fetch
+  - redacao de credenciais em URLs de remote e em stderr de erros (doc 10 s33/s61)
+  - erros classificados machine-readable (doc 10 s62/s63): details.gitError + nextAction
+- **apps/runtime**: 11 capabilities git.* no Control Plane (endpoint generico M1, decisao D4)
+- **policy**: leitura git SAFE/ALLOW; 7 mutacoes DESTRUCTIVE -> REQUIRE_APPROVAL mesmo com grant;
+  reservadas SEM grant (DEFAULT DENY): git.forcePush, git.resetHard, git.branch.deleteForce
+- **apps/cli**: `nexo git status|diff|history|branch list|branch create|branch switch|branch delete|commit|push|pull|fetch` (--json, saida humana, sem emojis)
+- **Testes**: 313 unit (88 git) + 51 e2e (15 git-flow) verdes; security probes de injecao
+  (path traversal, flag injection, shell metachars) com prova de nao-execucao
+- **Verificacao independente**: smoke dist real (node apps/runtime/dist/main.js) —
+  URLs 200/422/403/404 corretas, repo temp bit-identico apos probes, audit allow+deny+approval no DB
 
 ### Repo
 
 git clone https://github.com/Jhin1v9/Nexo-CMS.git
 
+---
+
+## Decisoes registradas (ler OPEN-QUESTIONS.md e STACK-DECISION.md)
+- D2: lib Git = git CLI real via CommandExecutor (simple-git/isomorphic-git/nodegit rejeitadas com pesquisa oficial)
+- D3: permisses git camelCase (doc 10 autoridade); force reservadas
+- D4: HTTP via endpoint generico /v1/capabilities/:id/invoke (sem rotas /git/*)
+- D5: commit scope — staged default; files[] explicito; all:true opt-in; hunks UNSUPPORTED
 
 ---
 
-## M2 — Git Foundation (INICIAR AGORA)
+## M3 — Editor core + Components/Media + Design/Responsive (INICIAR NA PROXIMA SESSAO)
 
-### Escopo
-Implementar operacoes Git via Runtime com seguranca DEFAULT DENY:
-- git.status, git.diff, git.history, git.branch.*
-- git.commit, git.push, git.pull, git.fetch
-- Operacoes de risco com REQUIRE_APPROVAL
-- Git real (nao emulado)
+### Escopo (DEPENDENCY-GRAPH / IMPLEMENTATION-PLAN)
+- Save pipeline real (Pending -> Validate -> Conflict -> Adapter -> Persist -> Verify -> Re-analyze -> Preview -> Saved)
+- Source mapping (elemento -> arquivo:linha:col; confidence EXACT|HIGH_CONFIDENCE|PARTIAL|UNKNOWN)
+- Component schema registry; media engine (MIME real); design tokens; viewports/responsive lab
+- UI (apps/cms React+Vite+Tailwind) entra aqui — STACK-DECISION: adiada do M1 para M3
 
 ### Documentacao obrigatoria (ler primeiro)
 1. .nexo-knowledge/IMPLEMENTATION-PLAN.md — estado geral
-2. .nexo-knowledge/doc-summaries/GROUP-F-GIT-AI-INTEGRATIONS.md — Doc 10 (Git)
-3. .nexo-knowledge/doc-summaries/GROUP-D-RUNTIME-ENGINE-CONTROL.md — Doc 04/05/06
-4. .nexo-knowledge/OPEN-QUESTIONS.md — Questao #4 (lib Git concreta)
-5. SPEC.md — §12 Acceptance Criteria
-
-### Decisao pendente (Questao #4)
-Lib Git concreta: isomorphic-git vs nodegit vs CLI
-Regra: docs exigem Git real. Decidir com pesquisa oficial antes de codificar.
+2. .nexo-knowledge/doc-summaries/NEXO CMS — EDITOR.md (doc 07)
+3. .nexo-knowledge/doc-summaries/NEXO CMS — COMPONENT AND MEDIA ENGINE.md (doc 08)
+4. .nexo-knowledge/doc-summaries/NEXO CMS — DESIGN AND RESPONSIVE LAB.md (doc 09)
+5. .nexo-knowledge/doc-summaries/GROUP-E-EDITOR-COMPONENTS-DESIGN.md
+6. NEXO-KNOWLEDGE-INDEX.md — hierarquia de leitura e regras do swarm
 
 ### Open Questions relevantes
-- Q4: Lib Git concreta → DECIDIR PRIMEIRO
-- Q2: Auth/policy engine → usar boundary interno M1 por enquanto
-- Q3: Schemas capabilities → extrair de doc 06 conforme implementar
+- Q5: merge de conflitos de edicao (source-editing subsystem) [AMBIGUO doc 07]
+- Q2: auth/policy engine definitiva — boundary interno M1/M2 por enquanto
+- Q3: schemas capabilities — extrair dos docs 07/08/09 conforme implementar
 
-### Estrutura esperada
-
-packages/git/          # novo package
-  src/
-    index.ts
-    operations/        # status, diff, log, branch, commit, push, pull, fetch
-    security/          # risk classification, approval gates
-    adapter/           # integracao com @nexo/runtime
-  test/
-apps/cli/src/          # novos comandos git:*
-apps/runtime/src/      # novos endpoints /git/*
-
-
-### Invariantes de seguranca (nao negociaveis)
+### Invariantes de seguranca (nao negociaveis, mantidas de M1/M2)
 - DEFAULT DENY em todas as operacoes
 - fs scope enforcement via @nexo/runtime
 - Audit trail em todas as operacoes de risco
-- REQUIRE_APPROVAL para: commit, push, pull, branch delete, force operations
 - Actor explicito em todas as chamadas
-
----
-
-## Checklist de inicio M2
-- [ ] Ler GROUP-F-GIT-AI-INTEGRATIONS.md completo
-- [ ] Pesquisar e decidir lib Git (isomorphic-git vs nodegit vs CLI)
-- [ ] Documentar decisao em STACK-DECISION.md
-- [ ] Implementar git.status (read-only, ALLOW)
-- [ ] Implementar git.diff (read-only, ALLOW)
-- [ ] Implementar git.log / git.history (read-only, ALLOW)
-- [ ] Implementar git.branch.list (read-only, ALLOW)
-- [ ] Implementar git.branch.create (REQUIRE_APPROVAL)
-- [ ] Implementar git.branch.delete (REQUIRE_APPROVAL)
-- [ ] Implementar git.commit (REQUIRE_APPROVAL)
-- [ ] Implementar git.push (REQUIRE_APPROVAL)
-- [ ] Implementar git.pull (REQUIRE_APPROVAL)
-- [ ] Implementar git.fetch (REQUIRE_APPROVAL)
-- [ ] Testes unit + e2e para cada operacao
-- [ ] Security probes (injecao de path, escape de scope)
-- [ ] Atualizar IMPLEMENTATION-PLAN.md
+- Git real: toda edicao visual tem contraparte Git (editor -> save pipeline -> git status/diff visiveis; commit via git.commit com REQUIRE_APPROVAL)
 
 ---
 
 ## Comandos uteis
-bash
+```bash
 # Setup
 cd Nexo-CMS
 pnpm install
@@ -107,10 +95,14 @@ pnpm build
 pnpm typecheck
 pnpm lint
 
-# CLI local
-node apps/cli/dist/index.js --help
+# Runtime local (dist)
+NEXO_PORT=47820 node apps/runtime/dist/main.js
 
+# CLI local
+node apps/cli/dist/main.js --help
+node apps/cli/dist/main.js git status <projectId> --json
+```
 
 ---
 
-*Handoff gerado por Luna em 2026-08-12. M1 concluido. M2 pronto para iniciar.*
+*Handoff atualizado em 2026-08-14. M1 + M2 concluidos e validados. M3 pronto para iniciar.*

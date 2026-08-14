@@ -12,6 +12,11 @@ import { createNexoClient, type ApiResult, type NexoClient } from './client.js';
 import {
   formatCapabilities,
   formatCommandResult,
+  formatGitBranchList,
+  formatGitDiff,
+  formatGitHistory,
+  formatGitMutation,
+  formatGitStatus,
   formatProjectImport,
   formatProjectList,
   formatProjectOpen,
@@ -57,6 +62,83 @@ async function execute(
         ...(command.timeoutMs !== undefined ? { timeoutMs: command.timeoutMs } : {}),
       });
       format = formatCommandResult as Formatter;
+      break;
+    // ---- M2 (git): invoke da capability homônima — a CLI NÃO duplica domínio
+    case 'git.status':
+      result = await client.invoke('git.status', { projectId: command.projectId });
+      format = formatGitStatus as Formatter;
+      break;
+    case 'git.diff':
+      result = await client.invoke('git.diff', {
+        projectId: command.projectId,
+        ...(command.mode !== undefined ? { mode: command.mode } : {}),
+        ...(command.from !== undefined ? { from: command.from } : {}),
+        ...(command.to !== undefined ? { to: command.to } : {}),
+        ...(command.path !== undefined ? { path: command.path } : {}),
+      });
+      format = formatGitDiff as Formatter;
+      break;
+    case 'git.history':
+      result = await client.invoke('git.history', {
+        projectId: command.projectId,
+        ...(command.limit !== undefined ? { limit: command.limit } : {}),
+        ...(command.ref !== undefined ? { ref: command.ref } : {}),
+      });
+      format = formatGitHistory as Formatter;
+      break;
+    case 'git.branch.list':
+      result = await client.invoke('git.branch.list', { projectId: command.projectId });
+      format = formatGitBranchList as Formatter;
+      break;
+    case 'git.branch.create':
+      result = await client.invoke('git.branch.create', {
+        projectId: command.projectId,
+        name: command.name,
+        ...(command.startPoint !== undefined ? { startPoint: command.startPoint } : {}),
+        ...(command.checkout ? { checkout: true } : {}),
+      });
+      format = formatGitMutation as Formatter;
+      break;
+    case 'git.branch.switch':
+      result = await client.invoke('git.branch.switch', { projectId: command.projectId, name: command.name });
+      format = formatGitMutation as Formatter;
+      break;
+    case 'git.branch.delete':
+      result = await client.invoke('git.branch.delete', { projectId: command.projectId, name: command.name });
+      format = formatGitMutation as Formatter;
+      break;
+    case 'git.commit':
+      result = await client.invoke('git.commit', {
+        projectId: command.projectId,
+        message: command.message,
+        ...(command.files !== undefined ? { files: command.files } : {}),
+        ...(command.all ? { all: true } : {}),
+        ...(command.expectedHead !== undefined ? { expectedHead: command.expectedHead } : {}),
+      });
+      format = formatGitMutation as Formatter;
+      break;
+    case 'git.push':
+      result = await client.invoke('git.push', {
+        projectId: command.projectId,
+        ...(command.remote !== undefined ? { remote: command.remote } : {}),
+        ...(command.branch !== undefined ? { branch: command.branch } : {}),
+      });
+      format = formatGitMutation as Formatter;
+      break;
+    case 'git.pull':
+      result = await client.invoke('git.pull', {
+        projectId: command.projectId,
+        ...(command.remote !== undefined ? { remote: command.remote } : {}),
+        ...(command.branch !== undefined ? { branch: command.branch } : {}),
+      });
+      format = formatGitMutation as Formatter;
+      break;
+    case 'git.fetch':
+      result = await client.invoke('git.fetch', {
+        projectId: command.projectId,
+        ...(command.remote !== undefined ? { remote: command.remote } : {}),
+      });
+      format = formatGitMutation as Formatter;
       break;
   }
 

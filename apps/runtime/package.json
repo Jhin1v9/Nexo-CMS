@@ -32,6 +32,7 @@
     "@nexo/adapters": "workspace:*",
     "@nexo/control-plane": "workspace:*",
     "@nexo/core": "workspace:*",
+    "@nexo/git": "workspace:*",
     "@nexo/intelligence": "workspace:*",
     "@nexo/runtime": "workspace:*",
     "@nexo/security": "workspace:*",
