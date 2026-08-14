@@ -45,6 +45,11 @@ import {
   type RuntimeCapabilityDeps,
 } from './capabilities/runtime.js';
 import { gitCapabilityRegistrations, type GitCapabilityDeps } from './capabilities/git.js';
+import {
+  createM3Services,
+  m3CapabilityRegistrations,
+  type M3Services,
+} from './capabilities/m3.js';
 import { createM1PolicyEngine } from './policy.js';
 
 export interface RuntimeInstance {
@@ -61,7 +66,8 @@ export interface RuntimeOptions {
 
 export function createRuntime(opts: RuntimeOptions = {}): Result<RuntimeInstance> {
   // 1. storage
-  const storageResult = createStorage(opts.dataDir ?? defaultDataDir());
+  const dataDir = opts.dataDir ?? defaultDataDir();
+  const storageResult = createStorage(dataDir);
   if (!storageResult.ok) return storageResult;
   const storage = storageResult.value;
 
@@ -94,6 +100,17 @@ export function createRuntime(opts: RuntimeOptions = {}): Result<RuntimeInstance
     controlPlane.register(cap);
   }
 
+  // capabilities M3 (35 — M3-CONTRACTS §3): services criados UMA vez aqui
+  // (composition root), wiring real: storage, scanner (PI), transformer
+  // React/TSX (D8), sourceMapper do intelligence, parser TSX real (07§41) e
+  // hook updateIntelligence (07§36) — ver capabilities/m3.ts.
+  const m3Services = createM3Services({ storage, dataDir, scanner });
+  if (!m3Services.ok) return m3Services;
+  const m3: M3Services = m3Services.value;
+  for (const cap of m3CapabilityRegistrations(m3, storage)) {
+    controlPlane.register(cap);
+  }
+
   // 6. HTTP
   const app = createAgentApi({ controlPlane });
 
@@ -104,6 +121,10 @@ export function createRuntime(opts: RuntimeOptions = {}): Result<RuntimeInstance
       controlPlane,
       storage,
       close() {
+        // ResponsiveService.close() encerra previews (dev servers) e o browser;
+        // async por natureza — close() da instância é sync (storage). Dispara
+        // e não bloqueia; testes que sobem previews devem aguardar o service.
+        void m3.responsive.close();
         storage.close();
       },
     },

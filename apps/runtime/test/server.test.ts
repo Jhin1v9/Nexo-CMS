@@ -84,12 +84,32 @@ describe('agent api M1 (servidor real + fetch)', () => {
     expect(await res.json()).toMatchObject({ status: 'ok' });
   });
 
-  it('GET /v1/capabilities -> 19 capabilities (M1+M2 git), ALLOW/REQUIRE_APPROVAL para o ator local default', async () => {
-    const { status, body } = api ? await api<{ capabilities: { id: string; allowed: string }[] }>('GET', '/v1/capabilities') : null!;
+  it('GET /v1/capabilities -> 56 capabilities (M1+M2 git+M3), ALLOW/REQUIRE_APPROVAL para o ator local default', async () => {
+    const { status, body } = api ? await api<{ capabilities: { id: string; allowed: string; risk: string }[] }>('GET', '/v1/capabilities') : null!;
     expect(status).toBe(200);
     const caps = body.value!.capabilities;
     const ids = caps.map((c) => c.id).sort();
     expect(ids).toEqual([
+      'component.create',
+      'component.delete',
+      'component.list',
+      'component.publish',
+      'component.read',
+      'component.update',
+      'design.read',
+      'design.token.read',
+      'design.token.update',
+      'design.update',
+      'editor.change.apply',
+      'editor.change.create',
+      'editor.change.list',
+      'editor.change.preview',
+      'editor.change.redo',
+      'editor.change.reject',
+      'editor.change.undo',
+      'editor.selection.read',
+      'editor.source.open',
+      'editor.source.save',
       'git.branch.create',
       'git.branch.delete',
       'git.branch.list',
@@ -101,23 +121,49 @@ describe('agent api M1 (servidor real + fetch)', () => {
       'git.pull',
       'git.push',
       'git.status',
+      'media.delete',
+      'media.list',
+      'media.read',
+      'media.replace',
+      'media.search',
+      'media.update',
+      'media.upload',
       'project.import',
       'project.list',
       'project.open',
       'project.read',
       'project.refresh',
+      'responsive.compare',
+      'responsive.diagnose',
+      'responsive.preview',
+      'responsive.snapshot',
+      'responsive.stressTest',
+      'responsive.viewport.create',
+      'responsive.viewport.delete',
+      'responsive.viewport.list',
       'runtime.command.execute',
       'runtime.filesystem.list',
       'runtime.filesystem.read',
+      'theme.read',
+      'theme.update',
     ]);
-    // M2: leituras git ALLOW; as 7 mutações git REQUIRE_APPROVAL (DESTRUCTIVE).
-    const byId = new Map(caps.map((c) => [c.id, c.allowed]));
+    // M2/M3: leituras SAFE -> ALLOW; mutações DESTRUCTIVE -> REQUIRE_APPROVAL.
+    const GIT_READS = ['git.status', 'git.diff', 'git.history', 'git.branch.list'];
+    const M3_MUTATIONS = [
+      'editor.source.save', 'editor.change.apply', 'editor.change.undo', 'editor.change.redo',
+      'component.create', 'component.update', 'component.delete', 'component.publish',
+      'media.upload', 'media.update', 'media.replace', 'media.delete',
+      'design.update', 'design.token.update', 'theme.update',
+    ];
     for (const c of caps) {
-      const mutacaoGit = c.id.startsWith('git.') && !['git.status', 'git.diff', 'git.history', 'git.branch.list'].includes(c.id);
-      expect(c.allowed).toBe(mutacaoGit ? 'REQUIRE_APPROVAL' : 'ALLOW');
+      const mutacao =
+        (c.id.startsWith('git.') && !GIT_READS.includes(c.id)) || M3_MUTATIONS.includes(c.id);
+      expect(c.allowed).toBe(mutacao ? 'REQUIRE_APPROVAL' : 'ALLOW');
+      // risk coerente com a decisão (policy.ts): mutação DESTRUCTIVE.
+      if (M3_MUTATIONS.includes(c.id)) expect(c.risk).toBe('DESTRUCTIVE');
     }
-    expect(byId.get('git.commit')).toBe('REQUIRE_APPROVAL');
-    expect(byId.get('git.status')).toBe('ALLOW');
+    expect(caps.find((c) => c.id === 'git.commit')?.allowed).toBe('REQUIRE_APPROVAL');
+    expect(caps.find((c) => c.id === 'git.status')?.allowed).toBe('ALLOW');
   });
 
   it('GET /v1/capabilities com ator desconhecido -> DEFAULT DENY', async () => {

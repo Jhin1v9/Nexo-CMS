@@ -30,6 +30,14 @@
  *    capability em M2, DEFAULT DENY permanente: `git.forcePush`,
  *    `git.resetHard`, `git.branch.deleteForce`. Force em push/delete retorna
  *    UNSUPPORTED apontando a capability reservada (regra no @nexo/git).
+ *  - M3 (M3-CONTRACTS §3, D9): 20 leituras (editor/component/media/design/
+ *    responsive SAFE) -> ALLOW; as 15 mutações (editor.source.save,
+ *    editor.change.apply/undo/redo, component.create/update/delete/publish,
+ *    media.upload/update/replace/delete, design.update, design.token.update,
+ *    theme.update) têm grant MAS risk DESTRUCTIVE -> REQUIRE_APPROVAL mesmo
+ *    com grant (padrão M2). Canal de aprovação por invocação: decisão D17
+ *    (approval válido no envelope de invoke -> ALLOW só naquela invocação,
+ *    com audit de approvedBy — ver packages/security e ./app.ts).
  *  - Qualquer outra permissão -> DEFAULT DENY (sem grant).
  */
 
@@ -108,13 +116,84 @@ export const GIT_PERMISSION_RISKS: Record<string, RiskLevel> = {
   ...Object.fromEntries(GIT_MUTATION_PERMISSIONS.map((p) => [p, 'DESTRUCTIVE' as const])),
 };
 
+/**
+ * Leituras M3 (M3-CONTRACTS §3 — 35 capabilities; permissão = capability id, D9):
+ * ALLOW com grant (risk SAFE). Inclui editor.change.create/preview/reject/list
+ * (não tocam source) e TODAS as 6 responsive.* (nunca mutam source — 09§67;
+ * diagnose/stress/compare/snapshot usam browser real, 09§46).
+ */
+export const M3_READ_PERMISSIONS: readonly string[] = [
+  'editor.source.open',
+  'editor.selection.read',
+  'editor.change.create',
+  'editor.change.preview',
+  'editor.change.reject',
+  'editor.change.list',
+  'component.list',
+  'component.read',
+  'media.list',
+  'media.read',
+  'media.search',
+  'design.read',
+  'design.token.read',
+  'theme.read',
+  'responsive.viewport.create',
+  'responsive.viewport.list',
+  'responsive.viewport.delete',
+  'responsive.preview',
+  'responsive.diagnose',
+  'responsive.stressTest',
+  'responsive.compare',
+  'responsive.snapshot',
+];
+
+/**
+ * Mutações M3 (M3-CONTRACTS §3): grant existe, mas o risk DESTRUCTIVE no
+ * PolicyEngine força REQUIRE_APPROVAL mesmo com grant (padrão M2) — o Control
+ * Plane short-circuita ANTES do handler (SPEC §8). Executáveis via canal de
+ * aprovação por invocação (decisão D17). component.publish e media.delete
+ * incluídos (risco de perda/divulgação).
+ */
+export const M3_MUTATION_PERMISSIONS: readonly string[] = [
+  'editor.source.save',
+  'editor.change.apply',
+  'editor.change.undo',
+  'editor.change.redo',
+  'component.create',
+  'component.update',
+  'component.delete',
+  'component.publish',
+  'media.upload',
+  'media.update',
+  'media.replace',
+  'media.delete',
+  'design.update',
+  'design.token.update',
+  'theme.update',
+];
+
+/** Riscos estáticos M3 para o PolicyEngine (leitura SAFE, mutação DESTRUCTIVE). */
+export const M3_PERMISSION_RISKS: Record<string, RiskLevel> = {
+  ...Object.fromEntries(M3_READ_PERMISSIONS.map((p) => [p, 'SAFE' as const])),
+  ...Object.fromEntries(M3_MUTATION_PERMISSIONS.map((p) => [p, 'DESTRUCTIVE' as const])),
+};
+
 export function createM1PolicyEngine(audit: AuditSink): PolicyEngine {
   return createPolicyEngine({
-    grants: { [LOCAL_ACTOR_ID]: [...M1_LOCAL_GRANTS, ...GIT_READ_PERMISSIONS, ...GIT_MUTATION_PERMISSIONS] },
-    // M2: risks populados — mutações git DESTRUCTIVE -> REQUIRE_APPROVAL mesmo
-    // com grant (mecanismo do PolicyEngine). A aprovação de comandos não-SAFE
-    // segue forçada pela regra estática '*.execute_sensitive'.
-    risks: GIT_PERMISSION_RISKS,
+    grants: {
+      [LOCAL_ACTOR_ID]: [
+        ...M1_LOCAL_GRANTS,
+        ...GIT_READ_PERMISSIONS,
+        ...GIT_MUTATION_PERMISSIONS,
+        ...M3_READ_PERMISSIONS,
+        ...M3_MUTATION_PERMISSIONS,
+      ],
+    },
+    // M2/M3: risks populados — mutações DESTRUCTIVE -> REQUIRE_APPROVAL mesmo
+    // com grant (mecanismo do PolicyEngine; com aprovação por invocação D17
+    // a decisão vira ALLOW somente naquela invocação). A aprovação de comandos
+    // não-SAFE segue forçada pela regra estática '*.execute_sensitive'.
+    risks: { ...GIT_PERMISSION_RISKS, ...M3_PERMISSION_RISKS },
     audit,
   });
 }

@@ -30,15 +30,21 @@
   "dependencies": {
     "@hono/node-server": "^1.19.0",
     "@nexo/adapters": "workspace:*",
+    "@nexo/components": "workspace:*",
     "@nexo/control-plane": "workspace:*",
     "@nexo/core": "workspace:*",
+    "@nexo/design": "workspace:*",
+    "@nexo/editor": "workspace:*",
     "@nexo/git": "workspace:*",
     "@nexo/intelligence": "workspace:*",
+    "@nexo/media": "workspace:*",
+    "@nexo/responsive": "workspace:*",
     "@nexo/runtime": "workspace:*",
     "@nexo/security": "workspace:*",
     "@nexo/shared": "workspace:*",
     "@nexo/storage": "workspace:*",
     "hono": "^4.13.0",
+    "typescript": "^6.0.3",
     "zod": "^4.4.3"
   }
 }

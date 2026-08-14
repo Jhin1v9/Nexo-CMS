@@ -29,6 +29,12 @@ export function toStorageAuditEvent(e: SecurityAuditEvent): StorageAuditEvent {
   if (e.resource !== undefined) out.resource = e.resource;
   if (e.decision !== undefined) out.decision = e.decision;
   if (e.details !== undefined) out.details = e.details;
+  // D17: o espelho do storage não tem coluna própria para `approval`
+  // (entidade existente preservada — sem migração); a aprovação é persistida
+  // dentro de `details.approval` (details_json), sem perda de informação.
+  if (e.approval !== undefined) {
+    out.details = { ...out.details, approval: e.approval };
+  }
   return out;
 }
 

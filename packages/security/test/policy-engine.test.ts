@@ -78,6 +78,66 @@ describe('PolicyEngine (SPEC §3)', () => {
     expect(decision).toBe('REQUIRE_APPROVAL');
   });
 
+  // ---- D17: canal de aprovação por invocação ------------------------------
+  describe('D17 — aprovação por invocação', () => {
+    const engineWithRisk = (sink?: FakeSink) =>
+      createPolicyEngine({
+        grants: { 'agent:1': ['project.delete', 'project.read'] },
+        risks: { 'project.delete': 'DESTRUCTIVE' },
+        ...(sink !== undefined ? { audit: sink } : {}),
+      });
+
+    it('REQUIRE_APPROVAL + approval válida -> ALLOW somente nesta invocação (sem grant permanente)', () => {
+      const engine = engineWithRisk();
+      const approved = engine.authorize(
+        req({ permission: 'project.delete', approval: { approver: 'human:1' } }),
+      );
+      expect(approved).toBe('ALLOW');
+      // Por invocação: a chamada SEGUINTE sem approval volta a REQUIRE_APPROVAL.
+      expect(engine.authorize(req({ permission: 'project.delete' }))).toBe('REQUIRE_APPROVAL');
+    });
+
+    it('approval com approver vazio/ausente -> permanece REQUIRE_APPROVAL', () => {
+      const engine = engineWithRisk();
+      expect(engine.authorize(req({ permission: 'project.delete', approval: { approver: '' } }))).toBe(
+        'REQUIRE_APPROVAL',
+      );
+      expect(engine.authorize(req({ permission: 'project.delete', approval: { approver: '   ' } }))).toBe(
+        'REQUIRE_APPROVAL',
+      );
+    });
+
+    it('approval NUNCA converte DENY (sem grant) em ALLOW', () => {
+      const engine = createPolicyEngine({ risks: { 'project.delete': 'DESTRUCTIVE' } });
+      expect(
+        engine.authorize(req({ permission: 'project.delete', approval: { approver: 'human:1' } })),
+      ).toBe('DENY');
+    });
+
+    it('audit registra approvedBy/justification em ALLOW via aprovação (§65)', () => {
+      const sink = new FakeSink();
+      const engine = engineWithRisk(sink);
+      engine.authorize(
+        req({ permission: 'project.delete', approval: { approver: 'human:1', justification: 'hotfix' } }),
+      );
+      const approvedEvent = sink.events.find((e) => e.what === 'authorize:project.delete' && e.decision === 'ALLOW');
+      expect(approvedEvent?.approval).toEqual({ approvedBy: 'human:1', justification: 'hotfix' });
+      expect(approvedEvent?.who.id).toBe('agent:1'); // requestedBy
+      expect(approvedEvent?.result).toBe('SUCCESS');
+    });
+
+    it('approval em permissão SAFE não altera ALLOW nem gera registro de aprovação', () => {
+      const sink = new FakeSink();
+      const engine = engineWithRisk(sink);
+      const decision = engine.authorize(
+        req({ permission: 'project.read', approval: { approver: 'human:1' } }),
+      );
+      expect(decision).toBe('ALLOW');
+      const ev = sink.events.find((e) => e.what === 'authorize:project.read');
+      expect(ev?.approval).toBeUndefined();
+    });
+  });
+
   it('requireAllow lança erro estruturado REQUIRE_APPROVAL (requiresApproval: true)', () => {
     const engine = createPolicyEngine({
       grants: { 'agent:1': ['project.delete'] },

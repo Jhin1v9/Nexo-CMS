@@ -9,6 +9,18 @@ import type { Actor } from '@nexo/core';
 
 export type Decision = 'ALLOW' | 'DENY' | 'REQUIRE_APPROVAL' | 'UNKNOWN';
 
+/**
+ * Aprovação POR INVOCAÇÃO (decisão D17, Permission Model §20/§65/§67):
+ * presente no envelope de invoke (`approval: { approver, justification? }`),
+ * NUNCA vira grant permanente. Válida somente com `approver` não-vazio —
+ * o PolicyEngine valida na fronteira (approver vazio/ausente = sem aprovação,
+ * a decisão segue REQUIRE_APPROVAL).
+ */
+export interface Approval {
+  approver: string;
+  justification?: string;
+}
+
 export interface AuthorizationRequest {
   actor: Actor;
   permission: string;
@@ -18,6 +30,8 @@ export interface AuthorizationRequest {
     environment?: string;
   };
   context?: Record<string, unknown>;
+  /** Aprovação por invocação (D17) — só converte REQUIRE_APPROVAL em ALLOW. */
+  approval?: Approval;
 }
 
 export interface AuthorizationBoundary {

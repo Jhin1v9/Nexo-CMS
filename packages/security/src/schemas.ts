@@ -15,6 +15,17 @@ const actorSchema = z.object({
   id: z.string().min(1),
 });
 
+/**
+ * Aprovação por invocação (D17). `approver` validado como não-vazio pelo
+ * PolicyEngine (fronteira de decisão); aqui apenas a FORMA estrutural — um
+ * approver vazio NÃO torna o request malformado (seguiria REQUIRE_APPROVAL,
+ * nunca UNKNOWN/FORBIDDEN por envelope de aprovação).
+ */
+const approvalSchema = z.object({
+  approver: z.string(),
+  justification: z.string().optional(),
+});
+
 export const authorizationRequestSchema: z.ZodType<AuthorizationRequest> = z.object({
   actor: actorSchema,
   permission: z.string().min(1),
@@ -24,6 +35,7 @@ export const authorizationRequestSchema: z.ZodType<AuthorizationRequest> = z.obj
     environment: z.string().optional(),
   }),
   context: z.record(z.string(), z.unknown()).optional(),
+  approval: approvalSchema.optional(),
 });
 
 export const auditEventSchema: z.ZodType<AuditEvent> = z.object({
@@ -43,6 +55,13 @@ export const auditEventSchema: z.ZodType<AuditEvent> = z.object({
   result: z.enum(['SUCCESS', 'PARTIAL', 'FAILED']),
   at: z.string().min(1),
   details: z.record(z.string(), z.unknown()).optional(),
+  // D17/§65: registro de aprovação por invocação (approvedBy não-vazio).
+  approval: z
+    .object({
+      approvedBy: z.string().min(1),
+      justification: z.string().optional(),
+    })
+    .optional(),
 });
 
 /** true quando o request tem forma válida; malformado -> decisão UNKNOWN (nunca ALLOW). */

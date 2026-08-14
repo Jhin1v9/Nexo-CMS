@@ -17,7 +17,7 @@
  */
 
 import type { CapabilityId, ExecutionContext } from '@nexo/core';
-import type { AuthorizationBoundary, AuditEvent, AuditSink, Decision } from '@nexo/security';
+import type { Approval, AuthorizationBoundary, AuditEvent, AuditSink, Decision } from '@nexo/security';
 import { authorizationErrorFor } from '@nexo/security';
 import type { NexoError, Result } from '@nexo/shared';
 import { err, newOperationId, nexoError, ok } from '@nexo/shared';
@@ -39,13 +39,18 @@ export interface ControlPlane {
   register(c: RegisteredCapability): void;
   /** Discovery filtrado por authorize() para o ator do contexto. */
   discover(ctx: ExecutionContext): DiscoveredCapability[];
-  /** Invocação síncrona (contratos async:'sync'). */
-  invoke<I, O>(id: CapabilityId, input: I, ctx: ExecutionContext): Promise<Result<O>>;
+  /**
+   * Invocação síncrona (contratos async:'sync'). `approval` (D17) é a
+   * aprovação POR INVOCAÇÃO: válida, converte REQUIRE_APPROVAL em ALLOW
+   * somente nesta chamada (sem grant permanente) e é registrada no audit.
+   */
+  invoke<I, O>(id: CapabilityId, input: I, ctx: ExecutionContext, approval?: Approval): Promise<Result<O>>;
   /** Invocação assíncrona (contratos async:'job') -> { jobId }. */
   invokeAsync(
     id: CapabilityId,
     input: unknown,
     ctx: ExecutionContext,
+    approval?: Approval,
   ): Promise<Result<{ jobId: string }>>;
   getJob(jobId: string): Result<Job>;
 }
@@ -76,6 +81,7 @@ export function createControlPlane(deps: ControlPlaneDeps): ControlPlane {
     decision: Decision,
     result: AuditEvent['result'],
     details?: Record<string, unknown>,
+    approval?: Approval,
   ): void {
     const event: AuditEvent = {
       id: newOperationId(),
@@ -88,12 +94,20 @@ export function createControlPlane(deps: ControlPlaneDeps): ControlPlane {
     };
     if (ctx.projectId !== undefined) event.resource = ctx.projectId;
     if (details !== undefined) event.details = details;
+    // D17/§65: operação aprovada — requestedBy = who, approvedBy aqui.
+    if (approval !== undefined) {
+      event.approval = {
+        approvedBy: approval.approver,
+        ...(approval.justification !== undefined ? { justification: approval.justification } : {}),
+      };
+    }
     audit.record(event);
   }
 
   function authorizeCapability(
     cap: RegisteredCapability,
     ctx: ExecutionContext,
+    approval?: Approval,
   ): Result<Decision> {
     const decision = security.authorize({
       actor: ctx.executedBy,
@@ -104,6 +118,7 @@ export function createControlPlane(deps: ControlPlaneDeps): ControlPlane {
         environment: ctx.environment,
       },
       context: { capabilityId: cap.contract.id, operationId: ctx.operationId },
+      ...(approval !== undefined ? { approval } : {}),
     });
     if (decision === 'ALLOW') return ok(decision);
     // DENY/UNKNOWN -> FORBIDDEN; REQUIRE_APPROVAL -> REQUIRE_APPROVAL (SPEC §8).
@@ -125,6 +140,7 @@ export function createControlPlane(deps: ControlPlaneDeps): ControlPlane {
     id: CapabilityId,
     input: unknown,
     ctx: ExecutionContext,
+    approval?: Approval,
   ): Result<{ cap: RegisteredCapability; parsed: unknown }> {
     const cap = registry.get(id);
     if (cap === undefined) {
@@ -141,7 +157,7 @@ export function createControlPlane(deps: ControlPlaneDeps): ControlPlane {
       emitAudit(id, ctx, 'DENY', 'FAILED', { errorCode: 'INVALID_INPUT' });
       return err(error);
     }
-    const authz = authorizeCapability(cap, ctx);
+    const authz = authorizeCapability(cap, ctx, approval);
     if (!authz.ok) return authz;
     return ok({ cap, parsed: parsed.data });
   }
@@ -183,17 +199,17 @@ export function createControlPlane(deps: ControlPlaneDeps): ControlPlane {
     }
   }
 
-  async function runJob(jobId: string, cap: RegisteredCapability, parsed: unknown, ctx: ExecutionContext): Promise<void> {
+  async function runJob(jobId: string, cap: RegisteredCapability, parsed: unknown, ctx: ExecutionContext, approval?: Approval): Promise<void> {
     jobs.updateStatus(jobId, 'RUNNING');
     const result = await runWithTimeout(cap, parsed, ctx);
     if (result.ok) {
       jobs.setResult(jobId, result.value);
       jobs.updateStatus(jobId, 'COMPLETED');
-      emitAudit(cap.contract.id, ctx, 'ALLOW', 'SUCCESS', { jobId });
+      emitAudit(cap.contract.id, ctx, 'ALLOW', 'SUCCESS', { jobId }, approval);
     } else {
       jobs.setError(jobId, result.error);
       jobs.updateStatus(jobId, 'FAILED');
-      emitAudit(cap.contract.id, ctx, 'ALLOW', 'FAILED', { jobId, errorCode: result.error.code });
+      emitAudit(cap.contract.id, ctx, 'ALLOW', 'FAILED', { jobId, errorCode: result.error.code }, approval);
     }
   }
 
@@ -218,8 +234,8 @@ export function createControlPlane(deps: ControlPlaneDeps): ControlPlane {
       }));
     },
 
-    async invoke<I, O>(id: CapabilityId, input: I, ctx: ExecutionContext): Promise<Result<O>> {
-      const gated = gate(id, input, ctx);
+    async invoke<I, O>(id: CapabilityId, input: I, ctx: ExecutionContext, approval?: Approval): Promise<Result<O>> {
+      const gated = gate(id, input, ctx, approval);
       if (!gated.ok) return gated;
       const { cap, parsed } = gated.value;
       if (cap.contract.async === 'job') {
@@ -232,9 +248,9 @@ export function createControlPlane(deps: ControlPlaneDeps): ControlPlane {
       }
       const result = await runWithTimeout(cap, parsed, ctx);
       if (result.ok) {
-        emitAudit(id, ctx, 'ALLOW', 'SUCCESS');
+        emitAudit(id, ctx, 'ALLOW', 'SUCCESS', undefined, approval);
       } else {
-        emitAudit(id, ctx, 'ALLOW', 'FAILED', { errorCode: result.error.code });
+        emitAudit(id, ctx, 'ALLOW', 'FAILED', { errorCode: result.error.code }, approval);
       }
       return result as Result<O>;
     },
@@ -243,8 +259,9 @@ export function createControlPlane(deps: ControlPlaneDeps): ControlPlane {
       id: CapabilityId,
       input: unknown,
       ctx: ExecutionContext,
+      approval?: Approval,
     ): Promise<Result<{ jobId: string }>> {
-      const gated = gate(id, input, ctx);
+      const gated = gate(id, input, ctx, approval);
       if (!gated.ok) return gated;
       const { cap, parsed } = gated.value;
       if (cap.contract.async !== 'job') {
@@ -267,10 +284,10 @@ export function createControlPlane(deps: ControlPlaneDeps): ControlPlane {
         updatedAt: now,
       };
       jobs.create(job);
-      emitAudit(id, ctx, 'ALLOW', 'SUCCESS', { jobId: job.id, jobStatus: 'QUEUED' });
+      emitAudit(id, ctx, 'ALLOW', 'SUCCESS', { jobId: job.id, jobStatus: 'QUEUED' }, approval);
       // Execução in-process: transições reais de estado persistidas no JobRepository.
       // void + catch interno em runJob: nenhuma rejeição escapa desta fronteira.
-      void runJob(job.id, cap, parsed, ctx);
+      void runJob(job.id, cap, parsed, ctx, approval);
       return ok({ jobId: job.id });
     },
 

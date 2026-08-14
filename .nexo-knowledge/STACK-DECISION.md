@@ -49,3 +49,30 @@ node >=20 · pnpm 10 · typescript ^6.0 · hono ^4.13 · @hono/node-server ^1 ·
 ## Consequências
 - Core tecnologicamente neutro (Inv. 43): nenhuma lógica de framework-alvo no Core — vale para o stack do Nexo também (Hono/SQLite ficam em apps/runtime e packages/storage, nunca em packages/core).
 - Compatibilidade declarada (Inv. 38): suporte declarado = Node ≥ 20 testado em 20.20.2 (Linux); Windows/macOS = não testado nesta sessão (não declarar).
+
+## D15 — Stack frontend apps/cms (2026-08-14, pesquisa oficial obrigatória do prompt M3 §92/§93)
+> Fontes: registry npm oficial + docs oficiais (vite.dev, tailwindcss.com, lucide.dev, base-ui.com, tanstack.com). Verificado em 2026-08-14 pelo agente de pesquisa M3.
+
+| Papel | Pacote | Versão | Justificativa |
+|---|---|---|---|
+| UI framework | react + react-dom | **19.2.8** | Major estável atual (estável desde 2024-12-05, react.dev/blog). |
+| Build | vite | **8.2.1** | Estável desde 2026-03-12 (Rolldown). Node ^20.19 \|\| >=22.12 — ambiente tem Node 20.20.2, OK. |
+| Plugin React | @vitejs/plugin-react | **6.0.5** | Par oficial do Vite 8 (peer vite ^8). |
+| CSS | tailwindcss + @tailwindcss/vite | **4.3.3** | v4 é a linha estável; CSS-first; tokens semânticos via diretiva `@theme` (background/foreground/muted/border/primary/danger/warning/success/focus do prompt M3); `@source` para monorepo. |
+| Ícones | lucide-react | **1.31.0** | Obrigatório pelo usuário + docs (AM §UI: Lucide ou SVG próprios; emojis proibidos). Tree-shakable, named imports. |
+| Router | @tanstack/react-router | **1.170.27** | React Router 8.3.0 exige Node >=22.22 (ambiente = 20.20.2 → inviável). TanStack: type-safe, Node >=20.19, compõe com Query/Table. |
+| Editor de código | @uiw/react-codemirror + @codemirror/lang-{html,css,javascript} | **4.25.11** / 6.x | CodeMirror 6 modular (leve, Vite-trivial) vs Monaco 0.56 (multi-MB, workers; wrapper @monaco-editor/react sem release desde 2025-02). Doc 07 não nomeia lib — decisão registrada aqui. |
+| DnD | @atlaskit/pragmatic-drag-and-drop | **2.0.2** | dnd-kit sem publish desde 2024-12 (>20 meses — risco). Pragmatic é o sucessor mantido (Atlassian). |
+| Primitivos acessíveis | @base-ui/react | **1.7.0** | Estável, ativo (2026-08-04), sucessor do Radix (feature development parou após 2025-08); base do shadcn/ui. Cobre Dialog/Dropdown/Tooltip/Tabs/Toast acessíveis — proibido alert()/confirm()/prompt() (prompt M3). |
+| Tabelas | @tanstack/react-table | **9.1.2** | Headless, ativo (2026-08-09). |
+| Server state | @tanstack/react-query | **5.101.4** | Cache do Control Plane HTTP client. |
+| Local UI state | zustand | **5.0.15** | Estado local de edição (07§28): seleção, viewport, painéis. |
+
+## D16 — Deps novas do backend M3 (2026-08-14)
+| Pacote | Versão | Uso |
+|---|---|---|
+| typescript | ^6.0.3 (já no repo como devDep root; promovido a dependency de @nexo/adapters) | AST parsing/transformation React/TSX (D8) — compiler API oficial, nunca string replacement (Inv. 44/45). |
+| playwright | **1.62.1** (registry npm, verificado 2026-08-14) | SOMENTE diagnósticos responsive (09§46; D14). DevDependency de @nexo/responsive; browser chromium via `playwright install chromium` no setup de teste. Nenhuma mutação de source depende dele (07§80 item 20). |
+| pixelmatch + pngjs | **7.2.0 / 7.0.0** (registry npm, verificado) | Image-diff de `responsive.compare`/snapshot (09§45 manda escolher por confiabilidade/performance — pixelmatch é o padrão de referência, tiny, sem nativos). |
+
+MIME sniffing de mídia: **sem dependência nova** — magic bytes implementados em @nexo/media (doc 08§45 exige MIME real, não extensão; conjunto: PNG/JPEG/GIF/WebP/SVG(texto)/PDF/MP4/WebM/WOFF/WOFF2; desconhecido → erro UNSUPPORTED_MEDIA_TYPE).

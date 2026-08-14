@@ -25,6 +25,8 @@ export interface ApiError {
   message: string;
   retryable?: boolean;
   requiresApproval?: boolean;
+  /** Ação seguinte sugerida pelo Control Plane (NexoError estável, M3-CONTRACTS §3). */
+  nextAction?: string;
   details?: Record<string, unknown>;
 }
 

@@ -20,6 +20,14 @@ import { err, nexoError, ok } from '@nexo/shared';
 
 import { runMigrations } from './migrations.js';
 import { createAuditRepository, type AuditRepository } from './repos/audit-repository.js';
+import {
+  createMediaAssetRepository,
+  type MediaAssetRepository,
+} from './repos/media-asset-repository.js';
+import {
+  createComponentRepository,
+  type ComponentRepository,
+} from './repos/component-repository.js';
 import { createJobRepository, type JobRepository } from './repos/job-repository.js';
 import {
   createPISnapshotRepository,
@@ -29,6 +37,14 @@ import {
   createProjectRepository,
   type ProjectRepository,
 } from './repos/project-repository.js';
+import {
+  createResponsiveSnapshotRepository,
+  type ResponsiveSnapshotRepository,
+} from './repos/responsive-snapshot-repository.js';
+import {
+  createResponsiveViewportRepository,
+  type ResponsiveViewportRepository,
+} from './repos/responsive-viewport-repository.js';
 import {
   createWorkspaceRepository,
   type WorkspaceRepository,
@@ -47,6 +63,10 @@ export interface StorageRepos {
   jobs: JobRepository;
   audit: AuditRepository;
   piSnapshots: PISnapshotRepository;
+  mediaAssets: MediaAssetRepository;
+  responsiveViewports: ResponsiveViewportRepository;
+  responsiveSnapshots: ResponsiveSnapshotRepository;
+  components: ComponentRepository;
 }
 
 export interface Storage {
@@ -70,6 +90,10 @@ export function createStorage(dataDir: string): Result<Storage> {
         jobs: createJobRepository(db),
         audit: createAuditRepository(db),
         piSnapshots: createPISnapshotRepository(db),
+        mediaAssets: createMediaAssetRepository(db),
+        responsiveViewports: createResponsiveViewportRepository(db),
+        responsiveSnapshots: createResponsiveSnapshotRepository(db),
+        components: createComponentRepository(db),
       },
       close() {
         db.close();

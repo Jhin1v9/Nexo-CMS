@@ -88,8 +88,12 @@ function getProject(
   return ok(project);
 }
 
-/** Scan + fingerprint + persistência compartilhados por import/refresh. */
-async function scanAndPersist(
+/**
+ * Scan + fingerprint + persistência compartilhados por import/refresh.
+ * Exportado para o hook `updateIntelligence` do save pipeline M3 (07§36:
+ * após persistência confirmada, PI é re-escaneada — capabilities/m3.ts).
+ */
+export async function scanAndPersist(
   deps: ProjectCapabilityDeps,
   project: ProjectRegistration,
 ): Promise<Result<{ project: ProjectRegistration; model: ProjectModel }>> {

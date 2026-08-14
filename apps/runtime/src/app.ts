@@ -23,10 +23,12 @@
 
 import type { ExecutionContext } from '@nexo/core';
 import type { ControlPlane } from '@nexo/control-plane';
+import type { Approval } from '@nexo/security';
 import type { ErrorCode, NexoError, Result } from '@nexo/shared';
 import { newOperationId, nexoError } from '@nexo/shared';
 import { Hono, type Context } from 'hono';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
+import { z } from 'zod';
 
 import { ANONYMOUS_ACTOR } from './policy.js';
 
@@ -59,6 +61,40 @@ function extractProjectId(body: unknown): string | undefined {
     if (typeof pid === 'string' && pid.length > 0) return pid;
   }
   return undefined;
+}
+
+/**
+ * Envelope de aprovação POR INVOCAÇÃO (decisão D17, Permission Model
+ * §20/§65/§67): o body de invoke pode trazer
+ * `approval: { approver: string (min 1), justification?: string }` ao lado do
+ * input da capability. A chave `approval` é EXTRAÍDA aqui (nunca chega ao
+ * inputSchema da capability) e validada na fronteira: inválida -> 400
+ * INVALID_INPUT. A decisão ALLOW/REQUIRE_APPROVAL é do PolicyEngine
+ * (boundary único); aprovação válida NUNCA cria grant permanente.
+ */
+const approvalEnvelopeSchema = z.object({
+  approver: z.string().min(1),
+  justification: z.string().optional(),
+});
+
+interface InvokeEnvelope {
+  input: unknown;
+  approval?: Approval;
+}
+
+/** Separa `approval` do input; null = envelope de aprovação inválido. */
+function extractApproval(body: unknown): InvokeEnvelope | null {
+  if (typeof body !== 'object' || body === null || !('approval' in body)) {
+    return { input: body };
+  }
+  const { approval: rawApproval, ...rest } = body as Record<string, unknown>;
+  const parsed = approvalEnvelopeSchema.safeParse(rawApproval);
+  if (!parsed.success) return null;
+  const approval: Approval = {
+    approver: parsed.data.approver,
+    ...(parsed.data.justification !== undefined ? { justification: parsed.data.justification } : {}),
+  };
+  return { input: rest, approval };
 }
 
 export interface RuntimeAppDeps {
@@ -111,15 +147,25 @@ export function createAgentApi(deps: RuntimeAppDeps): Hono {
       });
       return c.json({ ok: false, error }, 400);
     }
-    const ctx = executionContext(c.req.header('x-nexo-actor'), body);
+    // D17: envelope de aprovação — extraído e validado ANTES do input da capability.
+    const envelope = extractApproval(body);
+    if (envelope === null) {
+      const error: NexoError = nexoError(
+        'INVALID_INPUT',
+        "Invalid approval envelope: expected { approver: string (min 1), justification?: string } (D17)",
+        { resource: id },
+      );
+      return c.json({ ok: false, error }, 400);
+    }
+    const ctx = executionContext(c.req.header('x-nexo-actor'), envelope.input);
 
     // Contrato async:'job' -> invokeAsync -> { jobId } (HTTP 202); sync -> invoke.
     const descriptor = controlPlane.discover(ctx).find((d) => d.id === id);
     if (descriptor?.async === 'job') {
-      const result = await controlPlane.invokeAsync(id, body, ctx);
+      const result = await controlPlane.invokeAsync(id, envelope.input, ctx, envelope.approval);
       return resultResponse(c, result, 202);
     }
-    const result = await controlPlane.invoke(id, body, ctx);
+    const result = await controlPlane.invoke(id, envelope.input, ctx, envelope.approval);
     return resultResponse(c, result);
   });
 

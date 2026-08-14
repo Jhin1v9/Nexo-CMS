@@ -19,6 +19,15 @@ export interface AuditEvent {
   /** ISO 8601. */
   at: string;
   details?: Record<string, unknown>;
+  /**
+   * Registro de aprovação por invocação (D17; Permission Model §65): presente
+   * SOMENTE quando a decisão ALLOW resultou de uma aprovação explícita
+   * (requestedBy = `who`; when = `at`; what/resource/result nos campos base).
+   */
+  approval?: {
+    approvedBy: string;
+    justification?: string;
+  };
 }
 
 export interface AuditSink {

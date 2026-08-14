@@ -82,5 +82,14 @@ nexo-cms/
 ## UI (Nexo CMS Application)
 Ícones Lucide (ou SVG próprios); emojis proibidos como ícones. Preview sempre rotulado com estado. Falhas parciais visíveis.
 
+## Fronteiras M3 (congeladas em M3-CONTRACTS.md, 2026-08-14)
+- `packages/editor`: Change Object/ChangeManager/save pipeline/undo-redo/source open-save. NUNCA parser de framework próprio nem shadow copy autoritativa (07§5, §74).
+- `packages/components`: Component Schema + Registry + publish pipeline (08§25/§74). Geração de source framework-específica delegada a adapters (08§92).
+- `packages/media`: asset registry, upload com MIME real (08§45), replace atualizando referências (08§48), delete com checagem de referências (08§51). Sem processamento de imagem em M3 (D13).
+- `packages/design`: tokens/themes via Styling Adapter (09§3); edita a fonte do token, nunca ocorrências hardcoded (09§8); sem design system paralela (09§54-55).
+- `packages/responsive`: viewports/diagnose/stressTest/compare/snapshot; browser real (Playwright) SOMENTE para diagnóstico (09§46; D14); stress content nunca persistido (09§33).
+- `apps/cms`: React+Vite+Tailwind+Lucide, consumidora pura do Control Plane HTTP; sem alert()/confirm()/prompt(); sem emojis; WCAG 2.2; design tokens semânticos.
+- Extensões: `packages/adapters` ganha write-path React/TSX via AST TS compiler (D8) + Styling Adapters Tailwind/Plain CSS; `packages/intelligence` ganha source mapping (file:line:col + confidence 07§12) e busca de referências de assets.
+
 ## Decisões adiadas pelos docs (NÃO inventar)
 Protocolo de API (REST/RPC/GraphQL); tecnologia de auth/policy engine; SGBD; lib Git concreta; schemas exatos de capabilities (pertencem ao doc 06); merge de conflitos de edição.

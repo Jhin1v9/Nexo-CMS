@@ -1,0 +1,38 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "src"
+  ],
+  "references": [
+    {
+      "path": "../shared"
+    },
+    {
+      "path": "../core"
+    },
+    {
+      "path": "../security"
+    },
+    {
+      "path": "../runtime"
+    },
+    {
+      "path": "../storage"
+    },
+    {
+      "path": "../intelligence"
+    },
+    {
+      "path": "../adapters"
+    }
+  ]
+}

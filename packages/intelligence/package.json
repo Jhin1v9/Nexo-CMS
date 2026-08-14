@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "NEXO ProjectScanner + ProjectModel builder + fingerprint (SPEC.md §7) — read-only, evidence-based",
+  "description": "NEXO ProjectScanner + ProjectModel builder + fingerprint (SPEC.md \u00a77) + M3 source mapping e referencias de assets \u2014 read-only, evidence-based",
   "exports": {
     ".": {
       "types": "./src/index.ts",
@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@nexo/adapters": "workspace:*",
-    "@nexo/shared": "workspace:*"
+    "@nexo/shared": "workspace:*",
+    "typescript": "^6.0.3"
   }
 }

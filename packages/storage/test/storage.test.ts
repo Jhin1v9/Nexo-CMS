@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import type { Storage } from '../src/index.js';
-import { createStorage, DB_FILENAME, defaultDataDir } from '../src/index.js';
+import { createStorage, DB_FILENAME, defaultDataDir, MIGRATIONS } from '../src/index.js';
 
 let dir: string;
 let open: Storage[] = [];
@@ -66,17 +66,20 @@ describe('createStorage', () => {
     const rows = second.db
       .prepare('SELECT version, applied_at FROM schema_migrations')
       .all() as Array<{ version: number; applied_at: string }>;
-    expect(rows).toHaveLength(1);
-    expect(rows[0]?.version).toBe(1);
+    // exatamente as migrations declaradas, sem duplicar apos reabrir
+    expect(rows).toHaveLength(MIGRATIONS.length);
+    expect(rows.map((r) => r.version).sort((a, b) => a - b)).toEqual(
+      MIGRATIONS.map((m) => m.version).sort((a, b) => a - b),
+    );
     expect(typeof rows[0]?.applied_at).toBe('string');
 
-    // tabelas M1 existem apos reabrir
+    // tabelas M1 + M3 (media) existem apos reabrir
     const tables = (
       second.db
         .prepare("SELECT name FROM sqlite_master WHERE type = 'table'")
         .all() as Array<{ name: string }>
     ).map((t) => t.name);
-    for (const t of ['workspaces', 'projects', 'jobs', 'audit_events', 'pi_snapshots']) {
+    for (const t of ['workspaces', 'projects', 'jobs', 'audit_events', 'pi_snapshots', 'media_assets']) {
       expect(tables).toContain(t);
     }
   });

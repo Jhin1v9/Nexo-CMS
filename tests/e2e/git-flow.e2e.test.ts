@@ -224,6 +224,60 @@ describe('git flow M2 — servidor real + fetch puro', () => {
     expect(git(repoDir, ['status', '--porcelain'])).toContain('M README.md');
   });
 
+  it('D17: git.commit COM approval por invocação -> executa DE VERDADE + audit com approvedBy', async () => {
+    const headBefore = git(repoDir, ['rev-parse', 'HEAD']);
+    const { status, body } = await invoke<{ committed: boolean; commitHash?: string }>('git.commit', {
+      projectId,
+      message: 'feat: commit aprovado via D17',
+      all: true,
+      approval: { approver: 'human:e2e-reviewer', justification: 'e2e D17' },
+    });
+    expect(status).toBe(200);
+    expect(body.ok).toBe(true);
+    // prova real: HEAD avançou no repositório git de verdade
+    const headAfter = git(repoDir, ['rev-parse', 'HEAD']);
+    expect(headAfter).not.toBe(headBefore);
+    expect(git(repoDir, ['log', '-1', '--format=%s'])).toContain('commit aprovado via D17');
+    expect(git(repoDir, ['status', '--porcelain'])).toBe('');
+
+    // audit (Permission Model §65): requestedBy = ator, approvedBy = approver,
+    // quando/operação/recurso/resultado nos campos base do evento.
+    const second = createStorage(nexoHome);
+    const events = second.ok ? second.value.repos.audit.list() : [];
+    if (second.ok) second.value.close();
+    const approvedEvents = events.filter(
+      (e) => (e.details?.['approval'] as { approvedBy?: string } | undefined)?.approvedBy === 'human:e2e-reviewer',
+    );
+    expect(approvedEvents.some((e) => e.what === 'authorize:git.commit' && e.decision === 'ALLOW')).toBe(true);
+    expect(approvedEvents.some((e) => e.what === 'git.commit' && e.result === 'SUCCESS')).toBe(true);
+    expect(approvedEvents.find((e) => e.what === 'git.commit')?.who.id).toBe('cli:local');
+
+    // aprovação é POR INVOCAÇÃO: a chamada seguinte sem approval volta ao gate
+    const { status: again } = await invoke('git.commit', { projectId, message: 'x', all: true });
+    expect(again).toBe(422);
+  });
+
+  it('D17: approval com approver vazio -> 400 INVALID_INPUT (envelope)', async () => {
+    const { status, body } = await invoke('git.commit', {
+      projectId,
+      message: 'x',
+      approval: { approver: '' },
+    });
+    expect(status).toBe(400);
+    expect(body.error!.code).toBe('INVALID_INPUT');
+    expect(git(repoDir, ['log', '-1', '--format=%s'])).toContain('commit aprovado via D17'); // nada novo
+  });
+
+  it('D17: approval NUNCA cria grant — ator sem grant + approval -> 403', async () => {
+    const { status, body } = await invoke(
+      'git.commit',
+      { projectId, message: 'x', all: true, approval: { approver: 'human:e2e-reviewer' } },
+      'agent:stranger',
+    );
+    expect(status).toBe(403);
+    expect(body.error!.code).toBe('FORBIDDEN');
+  });
+
   it('SEM header x-nexo-actor -> git.status 403 FORBIDDEN (fail-closed)', async () => {
     const { status, body } = await invoke('git.status', { projectId }, null);
     expect(status).toBe(403);
@@ -282,7 +336,9 @@ describe('git security probes (tentativa de REFUTAR o sistema)', () => {
     expect(status).toBe(422);
     expect(body.error!.code).toBe('REQUIRE_APPROVAL');
     expect(existsSync(sentinel)).toBe(false); // PROVA: nenhum metacaractere executou
-    expect(git(repoDir, ['status', '--porcelain'])).toContain('M README.md'); // nada commitado
+    // nada commitado: HEAD continua no commit aprovado do teste D17 anterior
+    expect(git(repoDir, ['log', '-1', '--format=%s'])).toContain('commit aprovado via D17');
+    expect(git(repoDir, ['log', '-1', '--format=%s'])).not.toContain('x; touch');
   });
 
   it('probe: body JSON malformado -> 400 INVALID_INPUT', async () => {

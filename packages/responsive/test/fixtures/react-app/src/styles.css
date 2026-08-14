@@ -1,0 +1,31 @@
+body {
+  margin: 0;
+  font-family: sans-serif;
+}
+
+.page {
+  padding: 0;
+}
+
+/* Breakpoint ESPECIFICO do projeto (700px) — o detector (09§22) deve ler
+   este valor, nunca assumir 640/768/1024/1280. */
+@media (min-width: 700px) {
+  .site-title {
+    font-size: 2.5rem;
+  }
+}
+
+/* Overflow horizontal proposital: 500px fixos estouram viewport 375px. */
+.wide-fixed {
+  width: 500px;
+  background: #eee;
+}
+
+/* Container estreito forca wrapping do botao com label longo. */
+.nav-bar {
+  width: 140px;
+}
+
+.nav-action {
+  width: 140px;
+}

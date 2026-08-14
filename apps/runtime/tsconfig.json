@@ -17,7 +17,12 @@
       "@nexo/adapters": ["../../packages/adapters/dist/index.d.ts"],
       "@nexo/intelligence": ["../../packages/intelligence/dist/index.d.ts"],
       "@nexo/control-plane": ["../../packages/control-plane/dist/index.d.ts"],
-      "@nexo/git": ["../../packages/git/dist/index.d.ts"]
+      "@nexo/git": ["../../packages/git/dist/index.d.ts"],
+      "@nexo/editor": ["../../packages/editor/dist/index.d.ts"],
+      "@nexo/media": ["../../packages/media/dist/index.d.ts"],
+      "@nexo/components": ["../../packages/components/dist/index.d.ts"],
+      "@nexo/design": ["../../packages/design/dist/index.d.ts"],
+      "@nexo/responsive": ["../../packages/responsive/dist/index.d.ts"]
     }
   },
   "include": ["src"],
@@ -30,6 +35,11 @@
     { "path": "../../packages/adapters" },
     { "path": "../../packages/intelligence" },
     { "path": "../../packages/control-plane" },
-    { "path": "../../packages/git" }
+    { "path": "../../packages/git" },
+    { "path": "../../packages/editor" },
+    { "path": "../../packages/media" },
+    { "path": "../../packages/components" },
+    { "path": "../../packages/design" },
+    { "path": "../../packages/responsive" }
   ]
 }

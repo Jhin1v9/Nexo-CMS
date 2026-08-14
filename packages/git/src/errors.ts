@@ -70,6 +70,7 @@ const KIND_TO_CODE: Record<GitErrorKind, ErrorCode> = {
   AuthenticationFailed: 'FORBIDDEN',
   PermissionDenied: 'FORBIDDEN',
   InvalidReference: 'INVALID_INPUT',
+  IdentityNotConfigured: 'INVALID_INPUT',
   HookFailed: 'INTERNAL',
   UnknownGitError: 'INTERNAL',
 };
@@ -83,6 +84,7 @@ const KIND_NEXT_ACTION: Partial<Record<GitErrorKind, string>> = {
   AuthenticationFailed: 'stop-check-credentials',
   PermissionDenied: 'stop-check-permissions',
   InvalidReference: 'stop-check-reference',
+  IdentityNotConfigured: 'configure-git-user-name-and-email',
 };
 
 export interface GitErrorOptions {

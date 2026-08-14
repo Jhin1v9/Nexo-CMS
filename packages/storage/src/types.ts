@@ -84,3 +84,91 @@ export interface PISnapshot {
   analyzedAt: string; // ISO 8601
   analysisVersion: string;
 }
+
+/**
+ * MediaAssetRecord (M3 — doc 08§42/§82, D10: registries via Repository Pattern;
+ * "Media Metadata" é entidade nomeada no doc 14).
+ * A identidade COMPLETA (AssetIdentity de @nexo/media) é serializada em
+ * identity_json; aqui permanece estrutural para não criar dependência cruzada
+ * (mesmo padrão de ProjectModelSnapshot). Colunas name/type existem só para
+ * indexação/consulta; a verdade canônica é identity_json.
+ */
+export interface MediaAssetRecord {
+  id: string; // uuid estável do asset (gerado por @nexo/media)
+  projectId: string;
+  name: string;
+  type: string; // AssetType (08§41) — string para não acoplar o enum
+  identity: Record<string, unknown>; // AssetIdentity serializada
+  createdAt: string; // ISO 8601
+  updatedAt: string; // ISO 8601
+}
+
+/**
+ * ResponsiveViewportRecord (M3 — doc 09§24/§25/§26): registry de viewports
+ * persistido via Repository Pattern. Presets são CONFIGURÁVEIS (09§25) e nunca
+ * verdade universal — isPreset apenas marca a origem, não confere autoridade.
+ * Tipos fortes (Viewport de @nexo/responsive) convergem por structural typing.
+ */
+export interface ResponsiveViewportRecord {
+  id: string; // uuid estável gerado por @nexo/responsive
+  name: string | null;
+  width: number; // px CSS, inteiro > 0
+  height: number; // px CSS, inteiro > 0
+  dpr: number | null; // device pixel ratio quando suportado (09§24)
+  orientation: 'Portrait' | 'Landscape'; // doc 09§28
+  isPreset: boolean;
+  createdAt: string; // ISO 8601
+}
+
+/**
+ * ResponsiveSnapshotRecord (M3 — doc 09§44): metadata do Snapshot visual.
+ * A IMAGEM fica em arquivo no dataDir (imagePath) — fora do SQLite; este row
+ * é só metadata + referência. Snapshots NUNCA são o Source Project (09§44):
+ * sourceState registra uma referência (ex.: fingerprint/HEAD) sem autoridade.
+ */
+export interface ResponsiveSnapshotRecord {
+  id: string; // uuid estável gerado por @nexo/responsive
+  projectId: string;
+  viewportId: string;
+  route: string;
+  sourceState: string; // referência de estado do source no momento da captura
+  previewRef: string; // Preview URL / Reference (09§44)
+  imagePath: string; // path absoluto do PNG no dataDir
+  diagnosticsJson: string; // DiagnosticIssue[] serializado (09§34)
+  createdAt: string; // ISO 8601
+}
+
+/**
+ * ComponentRecord (M3 — doc 08§6/§9, D10: registries via Repository Pattern;
+ * "Library Component" é entidade nomeada no doc 14).
+ * O ComponentSchema COMPLETO (de @nexo/components) é serializado em
+ * schema_json; aqui permanece estrutural para não criar dependência cruzada
+ * (mesmo padrão de MediaAssetRecord). Colunas name/scope existem só para
+ * indexação/consulta; a verdade canônica é schema_json.
+ * projectId é NULL para componentes de escopo Library/Workspace (identidade
+ * estável DENTRO do escopo — 08§6; Project Component != Library Component).
+ */
+export interface ComponentRecord {
+  id: string; // uuid estável do componente (gerado por @nexo/components)
+  projectId: string | null;
+  name: string;
+  scope: string; // 'Project' | 'Workspace' | 'Library' — string para não acoplar o enum
+  schema: Record<string, unknown>; // ComponentSchema serializado
+  createdAt: string; // ISO 8601
+  updatedAt: string; // ISO 8601
+}
+
+/**
+ * ComponentVersionRow (M3 — doc 08§26): version record de Library Component.
+ * O record completo (source snapshot/hash, dependencies, compatibility,
+ * changes, publishedAt — 08§26) vive em record_json (estrutural aqui).
+ * Um projeto usando a versão X nunca muda silenciosamente para Y (08§26):
+ * versions são imutáveis (insert-only, sem update).
+ */
+export interface ComponentVersionRow {
+  id: string; // uuid do version record
+  componentId: string; // id do Library Component
+  version: string; // semver
+  record: Record<string, unknown>; // ComponentVersionRecord serializado (08§26)
+  publishedAt: string; // ISO 8601
+}

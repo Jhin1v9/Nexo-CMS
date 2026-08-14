@@ -3,6 +3,10 @@
   "compilerOptions": {
     "noEmit": true,
     "types": ["node"],
+    // DOM: @nexo/responsive (M3) executa codigo no browser via page.evaluate
+    // (diagnose/stress) e e typechecado a partir do src aqui — mesmo lib do
+    // tsconfig proprio do pacote.
+    "lib": ["ES2022", "DOM"],
     "paths": {
       "@nexo/shared": ["../../packages/shared/src/index.ts"],
       "@nexo/core": ["../../packages/core/src/index.ts"],
@@ -12,8 +16,13 @@
       "@nexo/adapters": ["../../packages/adapters/src/index.ts"],
       "@nexo/intelligence": ["../../packages/intelligence/src/index.ts"],
       "@nexo/control-plane": ["../../packages/control-plane/src/index.ts"],
-      "@nexo/git": ["../../packages/git/src/index.ts"]
+      "@nexo/git": ["../../packages/git/src/index.ts"],
+      "@nexo/editor": ["../../packages/editor/src/index.ts"],
+      "@nexo/media": ["../../packages/media/src/index.ts"],
+      "@nexo/components": ["../../packages/components/src/index.ts"],
+      "@nexo/design": ["../../packages/design/src/index.ts"],
+      "@nexo/responsive": ["../../packages/responsive/src/index.ts"]
     }
   },
-  "include": ["src", "test"]
+  "include": ["src", "test", "../../packages/responsive/src/pngjs.d.ts"]
 }

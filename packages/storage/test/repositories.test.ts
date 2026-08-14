@@ -16,6 +16,7 @@ import { nexoError } from '@nexo/shared';
 import type {
   AuditEvent,
   Job,
+  MediaAssetRecord,
   ProjectRegistration,
   Storage,
   Workspace,
@@ -261,5 +262,53 @@ describe('PISnapshotRepository', () => {
 
   it('latest de projeto sem snapshot -> null', () => {
     expect(storage.repos.piSnapshots.latest('ghost')).toBeNull();
+  });
+});
+
+
+describe('MediaAssetRepository (M3 — doc 08§42, D10)', () => {
+  function makeAsset(overrides: Partial<MediaAssetRecord> = {}): MediaAssetRecord {
+    return {
+      id: crypto.randomUUID(),
+      projectId: 'p-1',
+      name: 'hero.png',
+      type: 'Image',
+      identity: { id: 'x', type: 'Image', source: { origin: 'UploadedFile', path: 'src/assets/hero.png' } },
+      createdAt: iso(),
+      updatedAt: iso(),
+      ...overrides,
+    };
+  }
+
+  it('upsert + getById roundtrip da identity_json', () => {
+    const asset = makeAsset();
+    storage.repos.mediaAssets.upsert(asset);
+    const got = storage.repos.mediaAssets.getById(asset.id);
+    expect(got).toEqual(asset);
+  });
+
+  it('upsert e idempotente por id (re-registro preserva id, atualiza updatedAt)', () => {
+    const asset = makeAsset();
+    storage.repos.mediaAssets.upsert(asset);
+    const updated = { ...asset, name: 'hero-2.png', updatedAt: iso() };
+    storage.repos.mediaAssets.upsert(updated);
+    expect(storage.repos.mediaAssets.listByProject('p-1')).toHaveLength(1);
+    expect(storage.repos.mediaAssets.getById(asset.id)?.name).toBe('hero-2.png');
+  });
+
+  it('listByProject filtra por projeto e ordena por created_at', () => {
+    storage.repos.mediaAssets.upsert(makeAsset({ projectId: 'p-2' }));
+    storage.repos.mediaAssets.upsert(makeAsset({ projectId: 'p-1' }));
+    storage.repos.mediaAssets.upsert(makeAsset({ projectId: 'p-1' }));
+    expect(storage.repos.mediaAssets.listByProject('p-1')).toHaveLength(2);
+    expect(storage.repos.mediaAssets.listByProject('ghost')).toHaveLength(0);
+  });
+
+  it('remove retorna true/false conforme o registro existia', () => {
+    const asset = makeAsset();
+    storage.repos.mediaAssets.upsert(asset);
+    expect(storage.repos.mediaAssets.remove(asset.id)).toBe(true);
+    expect(storage.repos.mediaAssets.remove(asset.id)).toBe(false);
+    expect(storage.repos.mediaAssets.getById(asset.id)).toBeNull();
   });
 });

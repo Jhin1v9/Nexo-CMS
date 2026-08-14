@@ -126,4 +126,7 @@ export type GitErrorKind =
   | 'NonFastForward'
   | 'HookFailed'
   | 'InvalidReference'
+  /** git sem user.name/user.email configurados (msg "Author identity unknown").
+   *  Adicionado em M3 (verificação e2e): erro acionável, não INTERNAL genérico. */
+  | 'IdentityNotConfigured'
   | 'UnknownGitError';

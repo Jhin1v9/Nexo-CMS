@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "NEXO Adapter Contract + detection adapters M1, evidence-based, read-only (SPEC.md §6)",
+  "description": "NEXO Adapter Contract + detection adapters M1 (read-only) + write-path M3 (React/TSX AST transform via TS compiler, Styling Adapters Tailwind/Plain CSS) — M3-CONTRACTS/D8",
   "exports": {
     ".": {
       "types": "./src/index.ts",
@@ -23,6 +23,7 @@
     "typecheck": "tsc -p tsconfig.typecheck.json"
   },
   "dependencies": {
-    "@nexo/shared": "workspace:*"
+    "@nexo/shared": "workspace:*",
+    "typescript": "^6.0.3"
   }
 }

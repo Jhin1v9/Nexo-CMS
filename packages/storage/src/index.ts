@@ -2,8 +2,11 @@ export type {
   AuditDecision,
   AuditEvent,
   AuditSink,
+  ComponentRecord,
+  ComponentVersionRow,
   Job,
   JobStatus,
+  MediaAssetRecord,
   PISnapshot,
   ProjectModelSnapshot,
   ProjectRegistration,
@@ -34,6 +37,22 @@ export {
   createPISnapshotRepository,
   type PISnapshotRepository,
 } from './repos/pi-snapshot-repository.js';
+export {
+  createMediaAssetRepository,
+  type MediaAssetRepository,
+} from './repos/media-asset-repository.js';
+export {
+  createComponentRepository,
+  type ComponentRepository,
+} from './repos/component-repository.js';
+export {
+  createResponsiveViewportRepository,
+  type ResponsiveViewportRepository,
+} from './repos/responsive-viewport-repository.js';
+export {
+  createResponsiveSnapshotRepository,
+  type ResponsiveSnapshotRepository,
+} from './repos/responsive-snapshot-repository.js';
 export {
   createStorage,
   defaultDataDir,

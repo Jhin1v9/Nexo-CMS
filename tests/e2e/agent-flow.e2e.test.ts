@@ -153,7 +153,7 @@ describe('agent flow M1 (a-n) — servidor real + fetch puro', () => {
   });
 
   // ---- (b) capabilities ----------------------------------------------------
-  it('b. GET /v1/capabilities -> 19 capabilities (M1+M2 git) com decisão allowed', async () => {
+  it('b. GET /v1/capabilities -> 56 capabilities (M1+M2 git+M3) com decisão allowed', async () => {
     const { status, body } = await api<{ capabilities: { id: string; allowed: string; risk: string }[] }>(
       'GET',
       '/v1/capabilities',
@@ -161,6 +161,26 @@ describe('agent flow M1 (a-n) — servidor real + fetch puro', () => {
     expect(status).toBe(200);
     const caps = body.value!.capabilities;
     expect(caps.map((c) => c.id).sort()).toEqual([
+      'component.create',
+      'component.delete',
+      'component.list',
+      'component.publish',
+      'component.read',
+      'component.update',
+      'design.read',
+      'design.token.read',
+      'design.token.update',
+      'design.update',
+      'editor.change.apply',
+      'editor.change.create',
+      'editor.change.list',
+      'editor.change.preview',
+      'editor.change.redo',
+      'editor.change.reject',
+      'editor.change.undo',
+      'editor.selection.read',
+      'editor.source.open',
+      'editor.source.save',
       'git.branch.create',
       'git.branch.delete',
       'git.branch.list',
@@ -172,21 +192,46 @@ describe('agent flow M1 (a-n) — servidor real + fetch puro', () => {
       'git.pull',
       'git.push',
       'git.status',
+      'media.delete',
+      'media.list',
+      'media.read',
+      'media.replace',
+      'media.search',
+      'media.update',
+      'media.upload',
       'project.import',
       'project.list',
       'project.open',
       'project.read',
       'project.refresh',
+      'responsive.compare',
+      'responsive.diagnose',
+      'responsive.preview',
+      'responsive.snapshot',
+      'responsive.stressTest',
+      'responsive.viewport.create',
+      'responsive.viewport.delete',
+      'responsive.viewport.list',
       'runtime.command.execute',
       'runtime.filesystem.list',
       'runtime.filesystem.read',
+      'theme.read',
+      'theme.update',
     ]);
-    // ator local: ALLOW em M1 + leituras git; REQUIRE_APPROVAL nas 7 mutações
-    // git (risk DESTRUCTIVE no PolicyEngine — handoff M2/doc 10 §16/§47).
+    // ator local: ALLOW em M1 + leituras git/M3; REQUIRE_APPROVAL nas mutações
+    // git (7) e M3 (15) (risk DESTRUCTIVE no PolicyEngine — handoff M2/doc 10
+    // §16/§47; M3-CONTRACTS §3). Executáveis com aprovação por invocação (D17).
     const GIT_READS = ['git.status', 'git.diff', 'git.history', 'git.branch.list'];
+    const M3_MUTATIONS = [
+      'editor.source.save', 'editor.change.apply', 'editor.change.undo', 'editor.change.redo',
+      'component.create', 'component.update', 'component.delete', 'component.publish',
+      'media.upload', 'media.update', 'media.replace', 'media.delete',
+      'design.update', 'design.token.update', 'theme.update',
+    ];
     for (const c of caps) {
       const gitMutation = c.id.startsWith('git.') && !GIT_READS.includes(c.id);
-      expect(c.allowed).toBe(gitMutation ? 'REQUIRE_APPROVAL' : 'ALLOW');
+      const m3Mutation = M3_MUTATIONS.includes(c.id);
+      expect(c.allowed).toBe(gitMutation || m3Mutation ? 'REQUIRE_APPROVAL' : 'ALLOW');
     }
     // ator desconhecido: mesma listagem, decisão DENY (discovery filtrado por authorize)
     const denied = await api<{ capabilities: { allowed: string }[] }>(
