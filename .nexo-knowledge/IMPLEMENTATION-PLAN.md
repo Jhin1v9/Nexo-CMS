@@ -31,7 +31,9 @@ git.status/diff/history/branch.*/commit/push/pull/fetch via Runtime; alto risco 
 
 **M2 — GIT FOUNDATION: VALIDADO (2026-08-14).** Leituras git operam contra o repo real via HTTP/CLI; mutações ficam atrás de REQUIRE_APPROVAL estruturado (fluxo de aprovação humana = milestone futuro, Open Question #2); permissões de força reservadas sem grant (git.forcePush/resetHard/branch.deleteForce → DEFAULT DENY; uso de force retorna UNSUPPORTED apontando a capability reservada). Próximo: M3 Editor core + Components/Media + Design/Responsive.
 
-### M3 — Editor core + Components/Media + Design/Responsive (NOT STARTED) — P1
+### M3 — Editor core + Components/Media + Design/Responsive (VALIDADO 2026-08-14, commit 4dafd87) — P1
+
+Concluído: 37 capabilities (M3-CONTRACTS.md + emenda D19), UI apps/cms completa, canal de aprovação D17, 725 testes + 54 e2e verdes, revisão independente APROVADO. Detalhes: M3-RESULT.md. Riscos aceitos: approval sem auth de aprovador (OQ#2), env propagado a filhos, deps de diagnóstico como devDependencies (D16).
 Docs: 07, 08, 09 + 01–06. Save pipeline real, source mapping, component schema, tokens, viewports. UI (apps/cms React+Vite) entra aqui.
 
 ### M4 — AI básica manual → autônoma (NOT STARTED) — P1/P2

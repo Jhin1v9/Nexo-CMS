@@ -30,7 +30,7 @@
  *    capability em M2, DEFAULT DENY permanente: `git.forcePush`,
  *    `git.resetHard`, `git.branch.deleteForce`. Force em push/delete retorna
  *    UNSUPPORTED apontando a capability reservada (regra no @nexo/git).
- *  - M3 (M3-CONTRACTS §3, D9): 20 leituras (editor/component/media/design/
+ *  - M3 (M3-CONTRACTS §3, D9/D19): 22 leituras (editor/component/media/design/
  *    responsive SAFE) -> ALLOW; as 15 mutações (editor.source.save,
  *    editor.change.apply/undo/redo, component.create/update/delete/publish,
  *    media.upload/update/replace/delete, design.update, design.token.update,

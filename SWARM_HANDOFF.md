@@ -105,4 +105,18 @@ node apps/cli/dist/main.js git status <projectId> --json
 
 ---
 
-*Handoff atualizado em 2026-08-14. M1 + M2 concluidos e validados. M3 pronto para iniciar.*
+*Handoff atualizado em 2026-08-14. M1 + M2 + M3 concluidos e validados.*
+
+---
+
+## M3 — VALIDADO (2026-08-14, commit 4dafd87)
+
+- 37 capabilities M3 (editor 10, component 6, media 7, design 4, theme 2, responsive 8) via invoke generico; total 56 descobriveis
+- Novos pacotes: editor, media, components, design, responsive + adapters/transform (AST TS byte-preserving) + intelligence (source mapping, asset references)
+- Storage migrations v2-v6 com repositories; protocolo de versoes reservadas por pacote
+- D17 canal de aprovacao end-to-end (envelope approval -> PolicyEngine -> audit approvedBy -> CLI --approve -> UI ApprovalDialog)
+- CLI: 35 comandos M3; UI apps/cms completa (React 19 + Vite 8 + Tailwind v4 + TanStack + zustand + lucide-react), zero emojis, zero alert()
+- Contrato: .nexo-knowledge/M3-CONTRACTS.md; decisoes D6-D19 em OPEN-QUESTIONS.md; stack D15/D16 em STACK-DECISION.md
+- Relatorio final: M3-RESULT.md (26 secoes, numeros reais)
+- Gates: build verde, 725 testes + 54 e2e verdes, lint 0 erros; revisao independente Wave 8-9 APROVADO
+- Proximo: M4 (migracoes de publish D11, approval interativo command.execute D18, auth formal OQ#2, auditoria axe)
